@@ -47,6 +47,7 @@ def main():
         json.dump({"data_file": args.data, "bars": len(bars),
                    "first_date": bars[0]["date"], "last_date": bars[-1]["date"],
                    "eval_start": args.eval_start,
+                   "start_equity": args.start_equity,
                    "params": result["params"], "metrics": metrics}, f, indent=2)
 
     with open(os.path.join(args.out, "trades.csv"), "w", newline="") as f:

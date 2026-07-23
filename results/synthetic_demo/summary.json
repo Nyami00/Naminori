@@ -4,6 +4,7 @@
   "first_date": "2025-10-01",
   "last_date": "2026-07-22",
   "eval_start": "2026-01-01",
+  "start_equity": 1000000.0,
   "params": {
     "entry_lookback": 20,
     "trend_ema": 50,
