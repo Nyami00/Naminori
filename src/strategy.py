@@ -121,6 +121,8 @@ DEFAULT_PARAMS = {
     "trail_atr_mult": 3.0,  # chandelier trailing stop distance in ATRs (breakout/pullback)
     "swing_wick_atr": 0.5,  # swing: stop buffer below the rejection wick, in ATRs
     "swing_target": "2r",   # swing: "2r" (two risk units) or "boundary" (opposite line)
+    "swing_gate_ema": None, # swing: optional EMA period; longs need close above it
+                            # (shorts below) - e.g. 200 for a long-term trend gate
     "risk_per_trade": 0.03, # fraction of current equity risked per trade
     "spread_jpy": 0.03,     # round-trip cost in JPY per unit of GBP (3 pips)
     "allow_short": True,
@@ -154,6 +156,7 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
     pb = ema(closes, p["pb_ema"])
     rng_hi = rolling_max(highs, p["entry_lookback"])   # swing: resistance line
     rng_lo = rolling_min(lows, p["entry_lookback"])    # swing: support line
+    gate = ema(closes, p["swing_gate_ema"]) if p.get("swing_gate_ema") else None
 
     equity = start_equity
     pos = None  # dict(dir, units, entry, stop, best_close, entry_date, risk_amt)
@@ -233,9 +236,11 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
             # upthrust - the systematic form of the double-bottom / double-top
             # rejection at a horizontal line)
             long_sig = (rng_lo[i] is not None and b["low"] < rng_lo[i]
-                        and b["close"] > rng_lo[i])
+                        and b["close"] > rng_lo[i]
+                        and (gate is None or b["close"] > gate[i]))
             short_sig = (p["allow_short"] and rng_hi[i] is not None
-                         and b["high"] > rng_hi[i] and b["close"] < rng_hi[i])
+                         and b["high"] > rng_hi[i] and b["close"] < rng_hi[i]
+                         and (gate is None or b["close"] < gate[i]))
         else:
             long_sig = hi_n[i] is not None and b["close"] > hi_n[i] and b["close"] > tr_ema[i]
             short_sig = (p["allow_short"] and lo_n[i] is not None
