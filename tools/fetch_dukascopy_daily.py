@@ -31,7 +31,7 @@ import subprocess
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE = "https://datafeed.dukascopy.com/datafeed/GBPJPY"
+BASE_URL = "https://datafeed.dukascopy.com/datafeed"
 SCALE = 1000.0
 REC = struct.Struct(">iiiiif")
 
@@ -73,6 +73,9 @@ def merge(store, day, o, hi, lo, c, vol):
         cur[4] += vol
 
 
+SYMBOL = "GBPJPY"
+
+
 def collect_side(side, from_year, to_date, cache):
     """Return {iso_date: [open, high, low, close, volume]} of UTC-day candles."""
     out = {}
@@ -80,7 +83,7 @@ def collect_side(side, from_year, to_date, cache):
     for year in range(from_year, today.year + 1):
         base_dt = dt.datetime(year, 1, 1, tzinfo=dt.timezone.utc)
         data = fetch(f"{BASE}/{year}/{side}_candles_day_1.bi5",
-                     os.path.join(cache, f"{side}_{year}.bi5"))
+                     os.path.join(cache, f"{SYMBOL}_{side}_{year}.bi5"))
         if data is not None:
             for t, o, c, lo, hi, vol in records(data):
                 d = (base_dt + dt.timedelta(seconds=t)).date().isoformat()
@@ -91,7 +94,7 @@ def collect_side(side, from_year, to_date, cache):
         # current year: completed months via hourly candles
         for m in range(0, today.month):
             mdata = fetch(f"{BASE}/{year}/{m:02d}/{side}_candles_hour_1.bi5",
-                          os.path.join(cache, f"{side}_h1_{year}_{m:02d}.bi5"))
+                          os.path.join(cache, f"{SYMBOL}_{side}_h1_{year}_{m:02d}.bi5"))
             if mdata is not None:
                 mbase = dt.datetime(year, m + 1, 1, tzinfo=dt.timezone.utc)
                 for t, o, c, lo, hi, vol in records(mdata):
@@ -104,7 +107,7 @@ def collect_side(side, from_year, to_date, cache):
             while day.month == m + 1 and day <= today:
                 if day.weekday() < 5:
                     ddata = fetch(f"{BASE}/{year}/{m:02d}/{day.day:02d}/{side}_candles_min_1.bi5",
-                                  os.path.join(cache, f"{side}_m1_{day.isoformat()}.bi5"))
+                                  os.path.join(cache, f"{SYMBOL}_{side}_m1_{day.isoformat()}.bi5"))
                     if ddata is not None:
                         for t, o, c, lo, hi, vol in records(ddata):
                             merge(out, day.isoformat(), o, hi, lo, c, vol)
@@ -117,15 +120,20 @@ def collect_side(side, from_year, to_date, cache):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--from-year", type=int, default=2014)
+    ap.add_argument("--symbol", default="GBPJPY")
     ap.add_argument("--to-date", default="2026-07-22")
     ap.add_argument("--cache", default="/tmp/claude-0/-home-user-Naminori/"
                     "7d1b3223-4b72-5896-a528-3b8962c9ed8d/scratchpad/duka")
-    ap.add_argument("--out", default=os.path.join(ROOT, "data",
-                                                  "gbpjpy_dukascopy_daily.csv"))
+    ap.add_argument("--out", default=None)
     args = ap.parse_args()
     os.makedirs(args.cache, exist_ok=True)
     to_date = dt.date.fromisoformat(args.to_date)
+    global BASE
+    BASE = f"{BASE_URL}/{args.symbol}"
+    if args.out is None:
+        args.out = os.path.join(ROOT, "data", f"{args.symbol.lower()}_dukascopy_daily.csv")
 
+    globals()["SYMBOL"] = args.symbol
     bid = collect_side("BID", args.from_year, to_date, args.cache)
     ask = collect_side("ASK", args.from_year, to_date, args.cache)
 
