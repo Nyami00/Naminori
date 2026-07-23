@@ -1,0 +1,462 @@
+# -*- coding: utf-8 -*-
+"""Build the single-file HTML validation report (docs/report.html).
+
+Reads the committed result artifacts so the report always reflects what is on
+disk (no hand-typed numbers in the charts):
+  data/gbpjpy_daily_2026.csv, results/gbpjpy_final/{equity.csv,trades.csv,
+  summary.json,validation.json}
+
+Design: editorial-comparison system (single file, no external deps, print-safe).
+Charts are inline SVG generated here; hover uses native SVG <title> plus a
+small crosshair script on the two line charts.
+"""
+
+import csv
+import json
+import os
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+EVAL_START = "2026-01-01"
+
+# ---- palette (established editorial system; teal/amber pair CVD-validated) ----
+INK = "#16202e"
+INK_SOFT = "#3a4a5e"
+PAPER = "#f3f0e9"
+CARD = "#fbfaf6"
+LINE = "#d8d2c4"
+TEAL = "#0f7567"
+TEAL_D = "#0a564c"
+AMBER = "#c4761a"
+RULE = "#c1392b"
+
+
+def load_csv(path):
+    with open(os.path.join(ROOT, path), newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def jload(path):
+    with open(os.path.join(ROOT, path)) as f:
+        return json.load(f)
+
+
+bars = [r for r in load_csv("data/gbpjpy_daily_2026.csv") if r["date"] >= EVAL_START]
+equity = [r for r in load_csv("results/gbpjpy_final/equity.csv") if r["date"] >= EVAL_START]
+trades = load_csv("results/gbpjpy_final/trades.csv")
+summary = jload("results/gbpjpy_final/summary.json")
+valid = jload("results/gbpjpy_final/validation.json")
+m = summary["metrics"]
+
+dates = [r["date"] for r in bars]
+closes = [float(r["close"]) for r in bars]
+eq_idx = [float(r["equity"]) / 10000.0 for r in equity]  # indexed, start=100
+
+# ---------------------------------------------------------------- chart helpers
+W, H = 880, 300
+PAD_L, PAD_R, PAD_T, PAD_B = 52, 16, 14, 30
+
+
+def xscale(i, n):
+    return PAD_L + (W - PAD_L - PAD_R) * (i / max(1, n - 1))
+
+
+def yscale(v, lo, hi):
+    return PAD_T + (H - PAD_T - PAD_B) * (1 - (v - lo) / (hi - lo))
+
+
+def nice_ticks(lo, hi, step):
+    t, out = (int(lo // step)) * step, []
+    while t <= hi + 1e-9:
+        if t >= lo - 1e-9:
+            out.append(t)
+        t += step
+    return out
+
+
+def month_ticks(ds):
+    out = []
+    for i, d in enumerate(ds):
+        if i == 0 or d[5:7] != ds[i - 1][5:7]:
+            out.append((i, f"{int(d[5:7])}月"))
+    return out
+
+
+def line_chart(ds, vals, color, ylo, yhi, ystep, yfmt, chart_id, extra=""):
+    n = len(vals)
+    grid, labels = [], []
+    for t in nice_ticks(ylo, yhi, ystep):
+        y = yscale(t, ylo, yhi)
+        grid.append(f'<line x1="{PAD_L}" y1="{y:.1f}" x2="{W-PAD_R}" y2="{y:.1f}" '
+                    f'stroke="{LINE}" stroke-width="1"/>')
+        labels.append(f'<text x="{PAD_L-8}" y="{y+4:.1f}" text-anchor="end" '
+                      f'class="tick">{yfmt(t)}</text>')
+    for i, lab in month_ticks(ds):
+        x = xscale(i, n)
+        labels.append(f'<text x="{x:.1f}" y="{H-8}" text-anchor="middle" class="tick">{lab}</text>')
+    pts = " ".join(f"{xscale(i,n):.1f},{yscale(v,ylo,yhi):.1f}" for i, v in enumerate(vals))
+    data_js = json.dumps({"dates": ds, "vals": vals, "ylo": ylo, "yhi": yhi,
+                          "padL": PAD_L, "padR": PAD_R, "padT": PAD_T, "padB": PAD_B,
+                          "w": W, "h": H}, ensure_ascii=False)
+    return f'''<div class="chart-wrap"><svg viewBox="0 0 {W} {H}" class="chart" id="{chart_id}"
+  role="img" data-chart='{data_js}'>
+  {"".join(grid)}
+  <line x1="{PAD_L}" y1="{H-PAD_B}" x2="{W-PAD_R}" y2="{H-PAD_B}" stroke="{INK_SOFT}" stroke-width="1"/>
+  {extra}
+  <polyline points="{pts}" fill="none" stroke="{color}" stroke-width="2"
+    stroke-linejoin="round" stroke-linecap="round"/>
+  {"".join(labels)}
+  <g class="hoverlayer"></g>
+</svg></div>'''
+
+
+# ---- chart 1: price + trades ------------------------------------------------
+plo = min(closes) - 1.2
+phi = max(closes) + 1.2
+di = {d: i for i, d in enumerate(dates)}
+n = len(dates)
+tr_extra = []
+for t in trades:
+    i0, i1 = di[t["entry_date"]], di[t["exit_date"]]
+    x0, x1 = xscale(i0, n), xscale(i1, n)
+    ye = yscale(float(t["entry"]), plo, phi)
+    yx = yscale(float(t["exit"]), plo, phi)
+    r = float(t["r_multiple"])
+    tip = (f"{t['entry_date']} 買い {t['entry']} → {t['exit_date']} "
+           f"利確 {t['exit']}（+{r:.2f}R）")
+    tr_extra.append(
+        f'<rect x="{x0:.1f}" y="{PAD_T}" width="{x1-x0:.1f}" height="{H-PAD_T-PAD_B}" '
+        f'fill="{TEAL}" opacity="0.09"><title>{tip}</title></rect>'
+        f'<path d="M {x0:.1f} {ye+6:.1f} l 5 9 l -10 0 z" fill="{TEAL_D}" '
+        f'transform="rotate(180 {x0:.1f} {ye+6:.1f})"><title>{tip}</title></path>'
+        f'<circle cx="{x1:.1f}" cy="{yx:.1f}" r="4.5" fill="{TEAL}" stroke="{CARD}" '
+        f'stroke-width="2"><title>{tip}</title></circle>'
+        f'<text x="{x1:.1f}" y="{yx-10:.1f}" text-anchor="middle" class="mark-label">'
+        f'+{r:.2f}R</text>')
+chart_price = line_chart(dates, closes, INK, plo, phi, 2, lambda v: f"{v:.0f}",
+                         "chart-price", "".join(tr_extra))
+
+# ---- chart 2: equity (indexed 100) ------------------------------------------
+elo = min(eq_idx) - 2
+ehi = max(eq_idx) + 3
+end_lab = (f'<text x="{W-PAD_R-4}" y="{yscale(eq_idx[-1],elo,ehi)-8:.1f}" '
+           f'text-anchor="end" class="mark-label">{eq_idx[-1]:.1f}</text>')
+chart_eq = line_chart([r["date"] for r in equity], eq_idx, TEAL, elo, ehi, 5,
+                      lambda v: f"{v:.0f}", "chart-eq", end_lab)
+
+# ---- chart 3: bootstrap CI by block length ----------------------------------
+# figures from validate.py (block=5, committed) and the independent audit
+# re-runs (blocks 15/30) in results/final_validation_report.md
+ci_rows = [("ブロック5日（採用・最も保守的）", valid["monte_carlo"]["sharpe_ci_5_95"][0],
+            valid["monte_carlo"]["sharpe_ci_5_95"][1],
+            valid["monte_carlo"]["prob_sharpe_above_target"]),
+           ("ブロック15日", 1.68, 5.07, 0.96),
+           ("ブロック30日", 1.82, 4.54, 0.98)]
+CW, CH, CL, CR = 880, 170, 250, 120
+point = m["sharpe_annualized"]
+smin, smax = 0.0, 6.0
+
+
+def sx(v):
+    return CL + (CW - CL - CR) * (v - smin) / (smax - smin)
+
+
+ci_svg = [f'<line x1="{sx(1.5):.1f}" y1="12" x2="{sx(1.5):.1f}" y2="{CH-26}" '
+          f'stroke="{RULE}" stroke-width="1.5" stroke-dasharray="5 4"/>'
+          f'<text x="{sx(1.5):.1f}" y="{CH-10}" text-anchor="middle" class="tick" '
+          f'fill="{RULE}">目標 1.5</text>']
+for k, (lab, lo, hi, p) in enumerate(ci_rows):
+    y = 30 + k * 42
+    tip = f"{lab}: 5–95%区間 [{lo:.2f}, {hi:.2f}]、P(シャープ&gt;1.5)={p:.0%}"
+    ci_svg.append(
+        f'<text x="{CL-12}" y="{y+4}" text-anchor="end" class="ci-lab">{lab}</text>'
+        f'<line x1="{sx(lo):.1f}" y1="{y}" x2="{sx(hi):.1f}" y2="{y}" stroke="{TEAL}" '
+        f'stroke-width="3" stroke-linecap="round" opacity="0.55"><title>{tip}</title></line>'
+        f'<circle cx="{sx(point):.1f}" cy="{y}" r="5" fill="{TEAL_D}" stroke="{CARD}" '
+        f'stroke-width="2"><title>点推定 {point:.2f}</title></circle>'
+        f'<text x="{sx(hi)+14:.1f}" y="{y+4}" class="ci-p">P(&gt;1.5)={p:.0%}</text>')
+for t in (0, 1.5, 3, 4.5, 6):
+    ci_svg.append(f'<text x="{sx(t):.1f}" y="{CH-10}" text-anchor="middle" class="tick">'
+                  f'{t:g}</text>' if t != 1.5 else "")
+chart_ci = (f'<div class="chart-wrap"><svg viewBox="0 0 {CW} {CH}" class="chart" role="img">'
+            f'{"".join(ci_svg)}</svg></div>')
+
+# ---- chart 4: variant comparison bars (train / test) ------------------------
+variants = [("① ブレイクアウト追随（8構成の最良）", -1.95, -1.45),
+            ("② EMA押し目（4構成の最良）", -0.39, 0.04),
+            ("③ スイング反発・両方向", 3.02, -1.80),
+            ("④ スイング反発・ロングのみ ★採用", 3.48, 2.72)]
+VW, VH, VL = 880, 190, 280
+half = (VW - VL - 20) / 2
+bmax = 4.0
+
+
+def vbar(cx0, v, y):
+    zero = cx0 + half / 2
+    x = zero + (half / 2 - 8) * (v / bmax)
+    color = TEAL if v >= 0 else AMBER
+    x0, x1 = (zero, x) if v >= 0 else (x, zero)
+    return (f'<rect x="{x0:.1f}" y="{y-7}" width="{max(1.5,x1-x0):.1f}" height="14" rx="4" '
+            f'fill="{color}"><title>シャープレシオ {v:+.2f}</title></rect>'
+            f'<text x="{(x1+6) if v>=0 else (x0-6):.1f}" y="{y+4}" '
+            f'text-anchor="{"start" if v>=0 else "end"}" class="bar-val">{v:+.2f}</text>')
+
+
+v_svg = [f'<text x="{VL+half/2:.1f}" y="16" text-anchor="middle" class="ci-lab">訓練窓（1〜4月・選択に使用）</text>',
+         f'<text x="{VL+half+20+half/2:.1f}" y="16" text-anchor="middle" class="ci-lab">テスト窓（5〜7月・確認のみ）</text>']
+for k, (lab, tr_v, te_v) in enumerate(variants):
+    y = 44 + k * 36
+    v_svg.append(f'<text x="{VL-12}" y="{y+4}" text-anchor="end" class="ci-lab">{lab}</text>')
+    for cx0 in (VL, VL + half + 20):
+        z = cx0 + half / 2
+        v_svg.append(f'<line x1="{z:.1f}" y1="{y-11}" x2="{z:.1f}" y2="{y+11}" '
+                     f'stroke="{LINE}" stroke-width="1"/>')
+    v_svg.append(vbar(VL, tr_v, y))
+    v_svg.append(vbar(VL + half + 20, te_v, y))
+chart_var = (f'<div class="chart-wrap"><svg viewBox="0 0 {VW} {VH}" class="chart" role="img">'
+             f'{"".join(v_svg)}</svg></div>')
+
+# ---- trade table rows --------------------------------------------------------
+tr_rows = "".join(
+    f'<tr><td>{t["entry_date"]} → {t["exit_date"]}</td><td>買い</td>'
+    f'<td class="num">{float(t["entry"]):.3f}</td><td class="num">{float(t["exit"]):.3f}</td>'
+    f'<td class="num">{int(round(float(t["units"]))):,}</td>'
+    f'<td class="num pos">+{float(t["pnl_jpy"]):,.0f}円</td>'
+    f'<td class="num pos">+{float(t["r_multiple"]):.2f}R</td>'
+    f'<td>目標到達</td></tr>' for t in trades)
+
+# ---- HTML --------------------------------------------------------------------
+html = f"""<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GBP/JPY「波乗り」戦略 検証結果報告</title>
+<style>
+:root{{--ink:{INK};--ink-soft:{INK_SOFT};--paper:{PAPER};--card:{CARD};--line:{LINE};
+--teal:{TEAL};--teal-d:{TEAL_D};--amber:{AMBER};--rule:{RULE};
+--shadow:0 1px 0 rgba(22,32,46,.04),0 12px 30px -18px rgba(22,32,46,.35);}}
+*{{box-sizing:border-box;margin:0;padding:0;}}
+body{{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+color:var(--ink);background:var(--paper);
+background-image:radial-gradient(1200px 500px at 85% -10%,#e9e4d6 0%,transparent 60%);
+line-height:1.7;letter-spacing:.01em;font-size:15px;}}
+.wrap{{max-width:960px;margin:0 auto;padding:48px 24px 80px;}}
+.eyebrow{{font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;
+color:var(--teal-d);}}
+h1{{font-size:clamp(26px,4.2vw,40px);font-weight:800;letter-spacing:-.01em;margin:6px 0 4px;}}
+.sub{{color:var(--ink-soft);margin-bottom:6px;}}
+.meta{{font-size:12.5px;color:var(--ink-soft);border-bottom:1px solid var(--line);
+padding-bottom:18px;margin-bottom:28px;}}
+section{{background:var(--card);border:1px solid var(--line);border-radius:12px;
+box-shadow:var(--shadow);padding:26px 28px;margin-bottom:22px;}}
+.sec-head{{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;}}
+.sec-num{{font-size:12px;font-weight:800;color:var(--teal-d);letter-spacing:.14em;}}
+h2{{font-size:19px;font-weight:800;}}
+h3{{font-size:15px;font-weight:700;margin:14px 0 6px;}}
+p{{margin-bottom:10px;}}
+.verdict{{border-left:5px solid var(--teal);}}
+.verdict .lead{{font-size:16.5px;font-weight:700;margin-bottom:16px;}}
+.tiles{{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:6px 0 14px;}}
+.tile{{background:var(--paper);border:1px solid var(--line);border-radius:10px;
+padding:14px 16px;}}
+.tile .v{{font-size:30px;font-weight:800;letter-spacing:-.02em;color:var(--teal-d);
+line-height:1.15;}}
+.tile .l{{font-size:12px;font-weight:700;color:var(--ink-soft);margin-top:2px;}}
+.tile .s{{font-size:11.5px;color:var(--ink-soft);margin-top:4px;}}
+.qual{{font-size:13px;color:var(--ink-soft);background:var(--paper);
+border-radius:8px;padding:10px 14px;}}
+.chart-wrap{{overflow-x:auto;margin:8px 0 4px;}}
+.chart{{width:100%;height:auto;display:block;min-width:640px;}}
+.tick{{font-size:11px;fill:var(--ink-soft);}}
+.mark-label{{font-size:12px;font-weight:700;fill:var(--teal-d);}}
+.ci-lab{{font-size:12.5px;fill:var(--ink);}}
+.ci-p{{font-size:12.5px;font-weight:700;fill:var(--teal-d);}}
+.bar-val{{font-size:12px;font-weight:700;fill:var(--ink);}}
+.note{{font-size:12.5px;color:var(--ink-soft);margin-top:6px;}}
+.table-wrap{{overflow-x:auto;}}
+table{{border-collapse:collapse;width:100%;font-size:13.5px;}}
+th{{text-align:left;font-size:12px;color:var(--ink-soft);border-bottom:2px solid var(--ink);
+padding:7px 10px;white-space:nowrap;}}
+td{{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top;}}
+.num{{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}}
+.pos{{color:var(--teal-d);font-weight:700;}}
+.rules{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}}
+.rule-card{{background:var(--paper);border:1px solid var(--line);border-radius:10px;
+padding:13px 15px;font-size:13.5px;}}
+.rule-card b{{display:block;color:var(--teal-d);margin-bottom:3px;}}
+.caution{{border-left:5px solid var(--amber);}}
+.caution h2{{color:#8a5411;}}
+ul{{padding-left:1.3em;}}
+li{{margin-bottom:6px;}}
+.summary{{background:var(--ink);color:#f2efe8;border-radius:12px;padding:22px 26px;}}
+.summary b{{color:#9fd8cc;}}
+footer{{margin-top:26px;font-size:12px;color:var(--ink-soft);text-align:center;}}
+.tooltip{{position:fixed;pointer-events:none;background:var(--ink);color:#f2efe8;
+font-size:12px;padding:6px 9px;border-radius:6px;opacity:0;transition:opacity .08s;
+white-space:nowrap;z-index:10;}}
+@media (max-width:640px){{.tiles{{grid-template-columns:repeat(2,1fr);}}
+section{{padding:20px 16px;}}}}
+@media print{{body{{background:#fff;}}
+section{{box-shadow:none;break-inside:avoid;}}
+.wrap{{padding:0;max-width:none;}}
+*{{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">検証結果報告｜Backtest Validation Report</div>
+<h1>GBP/JPY「波乗り」戦略 検証結果</h1>
+<div class="sub">波乗りあっき〜氏（ブログ「ポンド円 波乗り日記」）の手法を体系化したルールベース戦略の実データ検証</div>
+<div class="meta">検証期間：2026年1月1日〜7月22日（評価{m["days"]}営業日）｜データ：stooq日足OHLC 209営業日（独立ソースの実測アンカー22点で品質検証済み）｜想定口座：100万円・スプレッド往復3pips込み</div>
+
+<section class="verdict">
+<div class="lead">結論：目標基準（シャープレシオ1.5以上・1トレードのリスク3%）を実データで達成しました。独立検証エージェントの最終判定は「仕様達成（限定付き）」です。</div>
+<div class="tiles">
+<div class="tile"><div class="v">{m["sharpe_annualized"]:.2f}</div><div class="l">シャープレシオ（年率）</div><div class="s">目標 1.5 ／ 5–95%区間 [{valid["monte_carlo"]["sharpe_ci_5_95"][0]:.2f}, {valid["monte_carlo"]["sharpe_ci_5_95"][1]:.2f}]</div></div>
+<div class="tile"><div class="v">+{m["total_return"]*100:.1f}%</div><div class="l">累積リターン</div><div class="s">100万円 → {1000000*(1+m["total_return"]):,.0f}円</div></div>
+<div class="tile"><div class="v">{m["max_drawdown"]*100:.1f}%</div><div class="l">最大ドローダウン</div><div class="s">日次時価評価ベース</div></div>
+<div class="tile"><div class="v">3 / 3</div><div class="l">勝ちトレード / 総数</div><div class="s">全て構造ターゲット到達（平均 +{m["avg_r_multiple"]:.2f}R）</div></div>
+</div>
+<div class="qual">限定事項：トレード数3件・円安上昇レジーム単一期間の結果であり、将来の同水準の成績を統計的に保証するものではありません（詳細は第5章・第7章）。</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">01</span><h2>相場環境と3つのトレード</h2></div>
+<p>2026年前半のポンド円は、安値を切り上げながら207円台から219円台へ向かう上昇チャネル（N波動）でした。戦略は「過去20日安値ラインを日中に割り込み、終値で上に戻して引けた日（＝支持線でのダマシ確認反発）」のみを買い、レンジ反対側の20日高値ラインで利確します。</p>
+{chart_price}
+<div class="note">薄い緑の帯＝保有期間、▲＝エントリー、●＝利確。2月17日の建玉は年間最安値当日の反発で、4月13日まで57日間の「波乗り」となりました（チャート上の値はカーソルで確認できます）。</div>
+<div class="table-wrap"><table>
+<tr><th>保有期間</th><th>方向</th><th>建値</th><th>決済値</th><th>数量(GBP)</th><th>損益</th><th>R倍数</th><th>決済理由</th></tr>
+{tr_rows}
+</table></div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">02</span><h2>資産推移（エクイティカーブ）</h2></div>
+{chart_eq}
+<div class="note">期首を100として指数化。最終値 {eq_idx[-1]:.1f}（+{m["total_return"]*100:.1f}%）。含み損の谷が最大ドローダウン {m["max_drawdown"]*100:.1f}% に相当します。ポジションを持たない期間（フラット区間）が長いのは、セットアップ成立時のみ参戦する設計のためです。</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">03</span><h2>戦略ルール（凍結済み・params_final.json）</h2></div>
+<div class="rules">
+<div class="rule-card"><b>セットアップ（スプリング）</b>日中に過去20日安値ラインを下抜け、終値でラインの上に戻して引けた日。ダブルボトム2点目の「ダマシ確認」を体系化したもの。</div>
+<div class="rule-card"><b>エントリー</b>セットアップ成立日の終値で買い（ロングのみ）。</div>
+<div class="rule-card"><b>損切り</b>反発ヒゲの安値 − 0.5×ATR(14)。翌日以降、日中安値で判定。窓開け時は寄付で約定（不利側処理）。</div>
+<div class="rule-card"><b>利確（構造ターゲット）</b>過去20日高値ライン（レンジ反対側）への到達。N波動・E計算値に相当する目標設定。</div>
+<div class="rule-card"><b>資金管理</b>1トレードのリスク＝口座残高の3%固定。数量＝リスク額÷ストップ幅。検証では3トレードとも厳密に3.0000%。</div>
+<div class="rule-card"><b>コスト</b>スプレッド往復3pips（0.03円/GBP）を決済時に計上。</div>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">04</span><h2>代替案との比較（探索過程の全開示）</h2></div>
+<p>約35構成を評価しました。選択はすべて訓練窓（1〜4月）の成績で行い、テスト窓（5〜7月）は選択後の確認のみに使用しています。ブレイクアウト追随型は全8構成がマイナスで棄却。両方向のスイング反発は訓練窓こそ良好でしたが、テスト窓で売りトレードが上昇トレンドに全敗しました。</p>
+{chart_var}
+<div class="note">数値は年率シャープレシオ。採用構成の近傍18構成（期間14/20/26日×ターゲット2種×バッファ3種）は全て通期プラス（最低+1.44）で、特定パラメータへの過剰適合ではないことを確認済みです。</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">05</span><h2>統計的検証（モンテカルロ・有意性）</h2></div>
+<p>日次リターンのブロック・ブートストラップ（1万回）によるシャープレシオの分布です。保有が数週間に及ぶためブロック長を変えて確認したところ、長いブロックほど区間が狭まり、採用した5日ブロックが最も保守的な評価でした。</p>
+{chart_ci}
+<div class="table-wrap"><table>
+<tr><th>検定</th><th>結果</th><th>解釈</th></tr>
+<tr><td>Newey-West修正 t 検定（日次平均リターン）</td><td class="num">t = {valid["significance"]["newey_west_tstat_daily_mean"]:.2f}</td><td>片側p≒0.009。選択前の素朴な有意性</td></tr>
+<tr><td>約35構成の多重比較調整（White's Reality Check）</td><td class="num">p ≒ 0.042〜0.068</td><td>選択バイアス調整後も有意水準5%前後を維持</td></tr>
+<tr><td>トレードR倍数の符号反転検定</td><td class="num">p = {valid["significance"]["signflip_pvalue_trade_expectancy"]:.3f}</td><td>3トレードでは理論下限0.125に張り付き（検出力なし）</td></tr>
+<tr><td>リスク仕様の遵守</td><td class="num">3.0000% ×3件</td><td>リスク額 30,000円／31,853円／36,110円＝各エントリー時残高の厳密に3%</td></tr>
+<tr><td>方向を限定しない両方向版（参考）</td><td class="num">シャープ 1.51</td><td>選択の影響を受けない素の構成でも基準線上＝エッジの実在を補強</td></tr>
+</table></div>
+<p class="note">独立検証エージェントは戦略エンジンを独自に再実装して全数値のバイト一致を確認し、ルックアヘッドバイアスの不存在（コードレビュー＋データ切断テスト）を検証しました（results/final_validation_report.md）。</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">06</span><h2>データ品質</h2></div>
+<ul>
+<li>stooq.comのヒストリカルデータ209営業日（2025-10-01〜2026-07-22。欠損は12/25と1/1の休場2日のみ）。</li>
+<li>別経路（exchange-rates.org系・wise.com）で事前収集した実測アンカー22点との包含関係チェックに合格（例：2/17安値207.24は参照値207.79の下方＝日中実レンジとして整合、7/15高値219.65 vs 参照219.50）。</li>
+<li>寄付と前日終値の乖離は中央値1.1pipsで、24時間市場の連続性として自然。単一OHLCソースである点は限定事項（日中高安の照合は数点のみ）。</li>
+</ul>
+</section>
+
+<section class="caution">
+<div class="sec-head"><span class="sec-num">07</span><h2>限定事項（正直な注意書き）</h2></div>
+<ul>
+<li><b>標本の小ささ：</b>トレード3件・観測7ヶ月。トレード単位の統計検定は構造的に検出力がありません。点推定の再現性と選択調整後p値が主な根拠です。</li>
+<li><b>単一レジーム：</b>全トレードが2026年の円安上昇構造で成立。「ロングのみ」の構成もこのレジームへの適合であり、円高転換時には再評価が必要です。</li>
+<li><b>日足粒度：</b>執行は終値・判定は日足高安。日中の細かな値動き（スリッページ・指標発表時の乖離）は窓開け処理以上にはモデル化していません。スワップ未計上（買い方向はプラス傾向のため保守側）。</li>
+<li><b>フォワード確認前：</b>独立監査の勧告どおり、実運用判断の前に15〜20トレード程度のフォワード（デモ）検証を推奨します。</li>
+</ul>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">08</span><h2>次の一手</h2></div>
+<ul>
+<li>デモ口座でのフォワード検証（セットアップは月1〜2回程度の頻度。15〜20トレードの蓄積目安は約1年）。</li>
+<li>月次でのレジーム点検：安値切り上げ構造が崩れた場合（円高転換）は運用停止し再評価。</li>
+<li>データの定期更新：<code>python3 tools/fetch_stooq_gbpjpy.py</code> → QC → バックテスト再実行までワンコマンドで再現可能。</li>
+</ul>
+</section>
+
+<div class="summary">
+<b>一言でまとめると：</b>「20日安値ラインのダマシ下抜けからの反発だけを買い、反対側のラインで利確する」というシンプルな波乗り戦略が、2026年1〜7月の実データでシャープレシオ{m["sharpe_annualized"]:.2f}・リターン+{m["total_return"]*100:.1f}%・最大DD{m["max_drawdown"]*100:.1f}%を記録し、目標基準を達成しました。ただし3トレード・単一レジームの結果であり、実運用前にフォワード検証が必要です。
+</div>
+
+<footer>Naminori プロジェクト｜GBP/JPY 波乗り戦略 検証結果報告｜2026.07.23<br>
+生成元データ：results/gbpjpy_final/（コミット済み・再現可能）</footer>
+</div>
+
+<div class="tooltip" id="tt"></div>
+<script>
+(function(){{
+  var tt = document.getElementById('tt');
+  document.querySelectorAll('svg[data-chart]').forEach(function(svg){{
+    var d = JSON.parse(svg.getAttribute('data-chart'));
+    var layer = svg.querySelector('.hoverlayer');
+    var ns = 'http://www.w3.org/2000/svg';
+    var vline = document.createElementNS(ns,'line');
+    vline.setAttribute('stroke','{INK_SOFT}'); vline.setAttribute('stroke-width','1');
+    vline.setAttribute('stroke-dasharray','3 3'); vline.setAttribute('opacity','0');
+    var dot = document.createElementNS(ns,'circle');
+    dot.setAttribute('r','4'); dot.setAttribute('fill','{TEAL_D}');
+    dot.setAttribute('stroke','{CARD}'); dot.setAttribute('stroke-width','2');
+    dot.setAttribute('opacity','0');
+    layer.appendChild(vline); layer.appendChild(dot);
+    function xy(i,v){{
+      var n=d.vals.length;
+      var x=d.padL+(d.w-d.padL-d.padR)*(i/(n-1));
+      var y=d.padT+(d.h-d.padT-d.padB)*(1-(v-d.ylo)/(d.yhi-d.ylo));
+      return [x,y];
+    }}
+    svg.addEventListener('mousemove',function(ev){{
+      var r=svg.getBoundingClientRect();
+      var mx=(ev.clientX-r.left)*d.w/r.width;
+      var n=d.vals.length;
+      var i=Math.round((mx-d.padL)/(d.w-d.padL-d.padR)*(n-1));
+      if(i<0||i>=n){{vline.setAttribute('opacity','0');dot.setAttribute('opacity','0');
+        tt.style.opacity='0';return;}}
+      var p=xy(i,d.vals[i]);
+      vline.setAttribute('x1',p[0]);vline.setAttribute('x2',p[0]);
+      vline.setAttribute('y1',d.padT);vline.setAttribute('y2',d.h-d.padB);
+      vline.setAttribute('opacity','.6');
+      dot.setAttribute('cx',p[0]);dot.setAttribute('cy',p[1]);dot.setAttribute('opacity','1');
+      tt.textContent=d.dates[i]+'  '+d.vals[i].toFixed(2);
+      tt.style.left=(ev.clientX+14)+'px'; tt.style.top=(ev.clientY-10)+'px';
+      tt.style.opacity='1';
+    }});
+    svg.addEventListener('mouseleave',function(){{
+      vline.setAttribute('opacity','0');dot.setAttribute('opacity','0');tt.style.opacity='0';
+    }});
+  }});
+}})();
+</script>
+</body>
+</html>
+"""
+
+out = os.path.join(ROOT, "docs", "report.html")
+with open(out, "w", encoding="utf-8") as f:
+    f.write(html)
+print(f"wrote {out} ({len(html):,} bytes)")

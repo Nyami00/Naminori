@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GBP/JPY「波乗り」戦略 検証結果報告</title>
+<style>
+:root{--ink:#16202e;--ink-soft:#3a4a5e;--paper:#f3f0e9;--card:#fbfaf6;--line:#d8d2c4;
+--teal:#0f7567;--teal-d:#0a564c;--amber:#c4761a;--rule:#c1392b;
+--shadow:0 1px 0 rgba(22,32,46,.04),0 12px 30px -18px rgba(22,32,46,.35);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+color:var(--ink);background:var(--paper);
+background-image:radial-gradient(1200px 500px at 85% -10%,#e9e4d6 0%,transparent 60%);
+line-height:1.7;letter-spacing:.01em;font-size:15px;}
+.wrap{max-width:960px;margin:0 auto;padding:48px 24px 80px;}
+.eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;
+color:var(--teal-d);}
+h1{font-size:clamp(26px,4.2vw,40px);font-weight:800;letter-spacing:-.01em;margin:6px 0 4px;}
+.sub{color:var(--ink-soft);margin-bottom:6px;}
+.meta{font-size:12.5px;color:var(--ink-soft);border-bottom:1px solid var(--line);
+padding-bottom:18px;margin-bottom:28px;}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;
+box-shadow:var(--shadow);padding:26px 28px;margin-bottom:22px;}
+.sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;}
+.sec-num{font-size:12px;font-weight:800;color:var(--teal-d);letter-spacing:.14em;}
+h2{font-size:19px;font-weight:800;}
+h3{font-size:15px;font-weight:700;margin:14px 0 6px;}
+p{margin-bottom:10px;}
+.verdict{border-left:5px solid var(--teal);}
+.verdict .lead{font-size:16.5px;font-weight:700;margin-bottom:16px;}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:6px 0 14px;}
+.tile{background:var(--paper);border:1px solid var(--line);border-radius:10px;
+padding:14px 16px;}
+.tile .v{font-size:30px;font-weight:800;letter-spacing:-.02em;color:var(--teal-d);
+line-height:1.15;}
+.tile .l{font-size:12px;font-weight:700;color:var(--ink-soft);margin-top:2px;}
+.tile .s{font-size:11.5px;color:var(--ink-soft);margin-top:4px;}
+.qual{font-size:13px;color:var(--ink-soft);background:var(--paper);
+border-radius:8px;padding:10px 14px;}
+.chart-wrap{overflow-x:auto;margin:8px 0 4px;}
+.chart{width:100%;height:auto;display:block;min-width:640px;}
+.tick{font-size:11px;fill:var(--ink-soft);}
+.mark-label{font-size:12px;font-weight:700;fill:var(--teal-d);}
+.ci-lab{font-size:12.5px;fill:var(--ink);}
+.ci-p{font-size:12.5px;font-weight:700;fill:var(--teal-d);}
+.bar-val{font-size:12px;font-weight:700;fill:var(--ink);}
+.note{font-size:12.5px;color:var(--ink-soft);margin-top:6px;}
+.table-wrap{overflow-x:auto;}
+table{border-collapse:collapse;width:100%;font-size:13.5px;}
+th{text-align:left;font-size:12px;color:var(--ink-soft);border-bottom:2px solid var(--ink);
+padding:7px 10px;white-space:nowrap;}
+td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top;}
+.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.pos{color:var(--teal-d);font-weight:700;}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;}
+.rule-card{background:var(--paper);border:1px solid var(--line);border-radius:10px;
+padding:13px 15px;font-size:13.5px;}
+.rule-card b{display:block;color:var(--teal-d);margin-bottom:3px;}
+.caution{border-left:5px solid var(--amber);}
+.caution h2{color:#8a5411;}
+ul{padding-left:1.3em;}
+li{margin-bottom:6px;}
+.summary{background:var(--ink);color:#f2efe8;border-radius:12px;padding:22px 26px;}
+.summary b{color:#9fd8cc;}
+footer{margin-top:26px;font-size:12px;color:var(--ink-soft);text-align:center;}
+.tooltip{position:fixed;pointer-events:none;background:var(--ink);color:#f2efe8;
+font-size:12px;padding:6px 9px;border-radius:6px;opacity:0;transition:opacity .08s;
+white-space:nowrap;z-index:10;}
+@media (max-width:640px){.tiles{grid-template-columns:repeat(2,1fr);}
+section{padding:20px 16px;}}
+@media print{body{background:#fff;}
+section{box-shadow:none;break-inside:avoid;}
+.wrap{padding:0;max-width:none;}
+*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">検証結果報告｜Backtest Validation Report</div>
+<h1>GBP/JPY「波乗り」戦略 検証結果</h1>
+<div class="sub">波乗りあっき〜氏（ブログ「ポンド円 波乗り日記」）の手法を体系化したルールベース戦略の実データ検証</div>
+<div class="meta">検証期間：2026年1月1日〜7月22日（評価144営業日）｜データ：stooq日足OHLC 209営業日（独立ソースの実測アンカー22点で品質検証済み）｜想定口座：100万円・スプレッド往復3pips込み</div>
+
+<section class="verdict">
+<div class="lead">結論：目標基準（シャープレシオ1.5以上・1トレードのリスク3%）を実データで達成しました。独立検証エージェントの最終判定は「仕様達成（限定付き）」です。</div>
+<div class="tiles">
+<div class="tile"><div class="v">3.17</div><div class="l">シャープレシオ（年率）</div><div class="s">目標 1.5 ／ 5–95%区間 [1.04, 5.51]</div></div>
+<div class="tile"><div class="v">+27.6%</div><div class="l">累積リターン</div><div class="s">100万円 → 1,276,000円</div></div>
+<div class="tile"><div class="v">5.3%</div><div class="l">最大ドローダウン</div><div class="s">日次時価評価ベース</div></div>
+<div class="tile"><div class="v">3 / 3</div><div class="l">勝ちトレード / 総数</div><div class="s">全て構造ターゲット到達（平均 +2.84R）</div></div>
+</div>
+<div class="qual">限定事項：トレード数3件・円安上昇レジーム単一期間の結果であり、将来の同水準の成績を統計的に保証するものではありません（詳細は第5章・第7章）。</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">01</span><h2>相場環境と3つのトレード</h2></div>
+<p>2026年前半のポンド円は、安値を切り上げながら207円台から219円台へ向かう上昇チャネル（N波動）でした。戦略は「過去20日安値ラインを日中に割り込み、終値で上に戻して引けた日（＝支持線でのダマシ確認反発）」のみを買い、レンジ反対側の20日高値ラインで利確します。</p>
+<div class="chart-wrap"><svg viewBox="0 0 880 300" class="chart" id="chart-price"
+  role="img" data-chart='{"dates": ["2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02", "2026-04-03", "2026-04-06", "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10", "2026-04-13", "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-25", "2026-05-26", "2026-05-27", "2026-05-28", "2026-05-29", "2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "2026-07-17", "2026-07-20", "2026-07-21", "2026-07-22"], "vals": [211.106, 211.954, 211.474, 210.904, 210.751, 211.677, 212.862, 213.613, 212.749, 212.238, 211.513, 212.272, 212.627, 212.614, 213.893, 212.488, 210.834, 210.878, 211.761, 211.292, 211.797, 212.58, 213.326, 214.096, 212.504, 213.957, 213.509, 210.639, 208.68, 208.033, 208.614, 209.281, 207.912, 208.925, 208.746, 209.17, 208.612, 210.288, 211.915, 210.477, 210.492, 210.951, 210.421, 209.974, 210.391, 211.465, 211.986, 212.158, 212.877, 212.628, 211.205, 211.846, 212.379, 211.851, 211.968, 212.416, 212.687, 212.939, 213.002, 212.949, 212.572, 210.634, 209.91, 211.223, 211.06, 210.62, 211.402, 212.192, 212.491, 213.591, 214.559, 215.222, 215.461, 215.574, 215.298, 214.368, 214.838, 215.189, 215.32, 215.069, 215.747, 215.81, 215.701, 216.125, 213.048, 213.191, 212.686, 213.83, 212.38, 212.588, 213.597, 213.823, 213.346, 213.403, 212.267, 211.465, 213.261, 213.196, 213.493, 213.556, 213.925, 214.547, 214.184, 214.117, 214.114, 214.493, 214.819, 215.367, 214.695, 214.751, 213.677, 213.64, 214.394, 214.616, 214.634, 214.852, 215.004, 215.46, 213.449, 213.121, 213.443, 214.046, 213.251, 212.991, 213.454, 213.508, 214.668, 215.559, 215.751, 215.07, 215.47, 217.06, 216.573, 217.709, 217.68, 216.691, 216.843, 217.202, 219.483, 218.818, 218.55, 218.166, 218.29, 218.152], "ylo": 206.71200000000002, "yhi": 220.683, "padL": 52, "padR": 16, "padT": 14, "padB": 30, "w": 880, "h": 300}'>
+  <line x1="52" y1="246.4" x2="864" y2="246.4" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="209.8" x2="864" y2="209.8" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="173.1" x2="864" y2="173.1" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="136.5" x2="864" y2="136.5" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="99.8" x2="864" y2="99.8" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="63.2" x2="864" y2="63.2" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="26.5" x2="864" y2="26.5" stroke="#d8d2c4" stroke-width="1"/>
+  <line x1="52" y1="270" x2="864" y2="270" stroke="#3a4a5e" stroke-width="1"/>
+  <rect x="142.9" y="14" width="39.7" height="256" fill="#0f7567" opacity="0.09"><title>2026-01-26 買い 210.834 → 2026-02-04 利確 214.856（+2.06R）</title></rect><path d="M 142.9 200.5 l 5 9 l -10 0 z" fill="#0a564c" transform="rotate(180 142.9 200.5)"><title>2026-01-26 買い 210.834 → 2026-02-04 利確 214.856（+2.06R）</title></path><circle cx="182.6" cy="120.8" r="4.5" fill="#0f7567" stroke="#fbfaf6" stroke-width="2"><title>2026-01-26 買い 210.834 → 2026-02-04 利確 214.856（+2.06R）</title></circle><text x="182.6" y="110.8" text-anchor="middle" class="mark-label">+2.06R</text><rect x="233.7" y="14" width="221.5" height="256" fill="#0f7567" opacity="0.09"><title>2026-02-17 買い 207.912 → 2026-04-13 利確 215.008（+4.46R）</title></rect><path d="M 233.7 254.0 l 5 9 l -10 0 z" fill="#0a564c" transform="rotate(180 233.7 254.0)"><title>2026-02-17 買い 207.912 → 2026-04-13 利確 215.008（+4.46R）</title></path><circle cx="455.2" cy="118.0" r="4.5" fill="#0f7567" stroke="#fbfaf6" stroke-width="2"><title>2026-02-17 買い 207.912 → 2026-04-13 利確 215.008（+4.46R）</title></circle><text x="455.2" y="108.0" text-anchor="middle" class="mark-label">+4.46R</text><rect x="727.7" y="14" width="45.4" height="256" fill="#0f7567" opacity="0.09"><title>2026-06-18 買い 213.121 → 2026-06-30 利確 215.605（+2.00R）</title></rect><path d="M 727.7 158.6 l 5 9 l -10 0 z" fill="#0a564c" transform="rotate(180 727.7 158.6)"><title>2026-06-18 買い 213.121 → 2026-06-30 利確 215.605（+2.00R）</title></path><circle cx="773.1" cy="107.0" r="4.5" fill="#0f7567" stroke="#fbfaf6" stroke-width="2"><title>2026-06-18 買い 213.121 → 2026-06-30 利確 215.605（+2.00R）</title></circle><text x="773.1" y="97.0" text-anchor="middle" class="mark-label">+2.00R</text>
+  <polyline points="52.0,189.5 57.7,173.9 63.4,182.7 69.0,193.2 74.7,196.0 80.4,179.0 86.1,157.3 91.7,143.5 97.4,159.4 103.1,168.7 108.8,182.0 114.5,168.1 120.1,161.6 125.8,161.9 131.5,138.4 137.2,164.2 142.9,194.5 148.5,193.7 154.2,177.5 159.9,186.1 165.6,176.8 171.2,162.5 176.9,148.8 182.6,134.7 188.3,163.9 194.0,137.2 199.6,145.5 205.3,198.0 211.0,233.9 216.7,245.8 222.3,235.1 228.0,222.9 233.7,248.0 239.4,229.4 245.1,232.7 250.7,225.0 256.4,235.2 262.1,204.5 267.8,174.7 273.5,201.0 279.1,200.7 284.8,192.3 290.5,202.0 296.2,210.2 301.8,202.6 307.5,182.9 313.2,173.4 318.9,170.2 324.6,157.0 330.2,161.6 335.9,187.7 341.6,175.9 347.3,166.2 353.0,175.8 358.6,173.7 364.3,165.5 370.0,160.5 375.7,155.9 381.3,154.7 387.0,155.7 392.7,162.6 398.4,198.1 404.1,211.4 409.7,187.3 415.4,190.3 421.1,198.4 426.8,184.1 432.4,169.6 438.1,164.1 443.8,144.0 449.5,126.2 455.2,114.1 460.8,109.7 466.5,107.6 472.2,112.7 477.9,129.7 483.6,121.1 489.2,114.7 494.9,112.3 500.6,116.9 506.3,104.4 511.9,103.3 517.6,105.3 523.3,97.5 529.0,153.9 534.7,151.3 540.3,160.5 546.0,139.6 551.7,166.1 557.4,162.3 563.0,143.8 568.7,139.7 574.4,148.4 580.1,147.4 585.8,168.2 591.4,182.9 597.1,150.0 602.8,151.2 608.5,145.7 614.2,144.6 619.8,137.8 625.5,126.4 631.2,133.1 636.9,134.3 642.5,134.4 648.2,127.4 653.9,121.5 659.6,111.4 665.3,123.7 670.9,122.7 676.6,142.4 682.3,143.1 688.0,129.2 693.7,125.2 699.3,124.8 705.0,120.8 710.7,118.1 716.4,109.7 722.0,146.6 727.7,152.6 733.4,146.7 739.1,135.6 744.8,150.2 750.4,154.9 756.1,146.5 761.8,145.5 767.5,124.2 773.1,107.9 778.8,104.4 784.5,116.9 790.2,109.5 795.9,80.4 801.5,89.3 807.2,68.5 812.9,69.0 818.6,87.1 824.3,84.4 829.9,77.8 835.6,36.0 841.3,48.2 847.0,53.1 852.6,60.1 858.3,57.8 864.0,60.4" fill="none" stroke="#16202e" stroke-width="2"
+    stroke-linejoin="round" stroke-linecap="round"/>
+  <text x="44" y="250.4" text-anchor="end" class="tick">208</text><text x="44" y="213.8" text-anchor="end" class="tick">210</text><text x="44" y="177.1" text-anchor="end" class="tick">212</text><text x="44" y="140.5" text-anchor="end" class="tick">214</text><text x="44" y="103.8" text-anchor="end" class="tick">216</text><text x="44" y="67.2" text-anchor="end" class="tick">218</text><text x="44" y="30.5" text-anchor="end" class="tick">220</text><text x="52.0" y="292" text-anchor="middle" class="tick">1月</text><text x="171.2" y="292" text-anchor="middle" class="tick">2月</text><text x="284.8" y="292" text-anchor="middle" class="tick">3月</text><text x="409.7" y="292" text-anchor="middle" class="tick">4月</text><text x="534.7" y="292" text-anchor="middle" class="tick">5月</text><text x="653.9" y="292" text-anchor="middle" class="tick">6月</text><text x="778.8" y="292" text-anchor="middle" class="tick">7月</text>
+  <g class="hoverlayer"></g>
+</svg></div>
+<div class="note">薄い緑の帯＝保有期間、▲＝エントリー、●＝利確。2月17日の建玉は年間最安値当日の反発で、4月13日まで57日間の「波乗り」となりました（チャート上の値はカーソルで確認できます）。</div>
+<div class="table-wrap"><table>
+<tr><th>保有期間</th><th>方向</th><th>建値</th><th>決済値</th><th>数量(GBP)</th><th>損益</th><th>R倍数</th><th>決済理由</th></tr>
+<tr><td>2026-01-26 → 2026-02-04</td><td>買い</td><td class="num">210.834</td><td class="num">214.856</td><td class="num">15,471</td><td class="num pos">+61,760円</td><td class="num pos">+2.06R</td><td>目標到達</td></tr><tr><td>2026-02-17 → 2026-04-13</td><td>買い</td><td class="num">207.912</td><td class="num">215.008</td><td class="num">20,083</td><td class="num pos">+141,905円</td><td class="num pos">+4.46R</td><td>目標到達</td></tr><tr><td>2026-06-18 → 2026-06-30</td><td>買い</td><td class="num">213.121</td><td class="num">215.605</td><td class="num">29,486</td><td class="num pos">+72,358円</td><td class="num pos">+2.00R</td><td>目標到達</td></tr>
+</table></div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">02</span><h2>資産推移（エクイティカーブ）</h2></div>
+<div class="chart-wrap"><svg viewBox="0 0 880 300" class="chart" id="chart-eq"
+  role="img" data-chart='{"dates": ["2026-01-02", "2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-26", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-09", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-23", "2026-02-24", "2026-02-25", "2026-02-26", "2026-02-27", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-09", "2026-03-10", "2026-03-11", "2026-03-12", "2026-03-13", "2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19", "2026-03-20", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02", "2026-04-03", "2026-04-06", "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10", "2026-04-13", "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-25", "2026-05-26", "2026-05-27", "2026-05-28", "2026-05-29", "2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19", "2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26", "2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-06", "2026-07-07", "2026-07-08", "2026-07-09", "2026-07-10", "2026-07-13", "2026-07-14", "2026-07-15", "2026-07-16", "2026-07-17", "2026-07-20", "2026-07-21", "2026-07-22"], "vals": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.068073, 101.43416500000001, 100.708574, 101.489861, 102.70124399999999, 103.85538299999999, 106.17603899999999, 106.17603899999999, 106.17603899999999, 106.17603899999999, 106.17603899999999, 106.17603899999999, 106.17603899999999, 106.17603899999999, 106.17603899999999, 106.17603899999999, 108.21043200000001, 107.850949, 108.70246100000001, 107.58183799999999, 110.947724, 114.215203, 111.32728999999999, 111.35741399999999, 112.27921699999999, 111.214826, 110.317122, 111.154577, 113.311475, 114.35779099999999, 114.703216, 116.147173, 115.64711000000001, 112.789321, 114.076631, 115.147047, 114.086673, 114.321642, 115.221354, 115.765599, 116.27168700000001, 116.39820900000001, 116.29177, 115.534646, 111.64258999999998, 110.18859199999999, 112.82547, 112.49812, 111.614474, 113.18495300000001, 114.771498, 115.371975, 117.581088, 119.525108, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 120.366579, 121.316014, 123.09399199999999, 120.74989099999999, 119.983267, 121.348448, 121.50766999999999, 124.92799299999999, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332, 127.602332], "ylo": 98.0, "yhi": 130.602332, "padL": 52, "padR": 16, "padT": 14, "padB": 30, "w": 880, "h": 300}'>
+  <line x1="52" y1="254.3" x2="864" y2="254.3" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="215.0" x2="864" y2="215.0" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="175.8" x2="864" y2="175.8" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="136.5" x2="864" y2="136.5" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="97.3" x2="864" y2="97.3" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="58.0" x2="864" y2="58.0" stroke="#d8d2c4" stroke-width="1"/><line x1="52" y1="18.7" x2="864" y2="18.7" stroke="#d8d2c4" stroke-width="1"/>
+  <line x1="52" y1="270" x2="864" y2="270" stroke="#3a4a5e" stroke-width="1"/>
+  <text x="860" y="29.6" text-anchor="end" class="mark-label">127.6</text>
+  <polyline points="52.0,254.3 57.7,254.3 63.4,254.3 69.0,254.3 74.7,254.3 80.4,254.3 86.1,254.3 91.7,254.3 97.4,254.3 103.1,254.3 108.8,254.3 114.5,254.3 120.1,254.3 125.8,254.3 131.5,254.3 137.2,254.3 142.9,254.3 148.5,253.8 154.2,243.0 159.9,248.7 165.6,242.6 171.2,233.1 176.9,224.0 182.6,205.8 188.3,205.8 194.0,205.8 199.6,205.8 205.3,205.8 211.0,205.8 216.7,205.8 222.3,205.8 228.0,205.8 233.7,205.8 239.4,189.8 245.1,192.6 250.7,186.0 256.4,194.8 262.1,168.3 267.8,142.7 273.5,165.4 279.1,165.1 284.8,157.9 290.5,166.2 296.2,173.3 301.8,166.7 307.5,149.8 313.2,141.6 318.9,138.8 324.6,127.5 330.2,131.4 335.9,153.9 341.6,143.8 347.3,135.4 353.0,143.7 358.6,141.8 364.3,134.8 370.0,130.5 375.7,126.5 381.3,125.5 387.0,126.4 392.7,132.3 398.4,162.9 404.1,174.3 409.7,153.6 415.4,156.2 421.1,163.1 426.8,150.8 432.4,138.3 438.1,133.6 443.8,116.2 449.5,101.0 455.2,94.4 460.8,94.4 466.5,94.4 472.2,94.4 477.9,94.4 483.6,94.4 489.2,94.4 494.9,94.4 500.6,94.4 506.3,94.4 511.9,94.4 517.6,94.4 523.3,94.4 529.0,94.4 534.7,94.4 540.3,94.4 546.0,94.4 551.7,94.4 557.4,94.4 563.0,94.4 568.7,94.4 574.4,94.4 580.1,94.4 585.8,94.4 591.4,94.4 597.1,94.4 602.8,94.4 608.5,94.4 614.2,94.4 619.8,94.4 625.5,94.4 631.2,94.4 636.9,94.4 642.5,94.4 648.2,94.4 653.9,94.4 659.6,94.4 665.3,94.4 670.9,94.4 676.6,94.4 682.3,94.4 688.0,94.4 693.7,94.4 699.3,94.4 705.0,94.4 710.7,94.4 716.4,94.4 722.0,94.4 727.7,94.4 733.4,86.9 739.1,73.0 744.8,91.4 750.4,97.4 756.1,86.7 761.8,85.4 767.5,58.6 773.1,37.6 778.8,37.6 784.5,37.6 790.2,37.6 795.9,37.6 801.5,37.6 807.2,37.6 812.9,37.6 818.6,37.6 824.3,37.6 829.9,37.6 835.6,37.6 841.3,37.6 847.0,37.6 852.6,37.6 858.3,37.6 864.0,37.6" fill="none" stroke="#0f7567" stroke-width="2"
+    stroke-linejoin="round" stroke-linecap="round"/>
+  <text x="44" y="258.3" text-anchor="end" class="tick">100</text><text x="44" y="219.0" text-anchor="end" class="tick">105</text><text x="44" y="179.8" text-anchor="end" class="tick">110</text><text x="44" y="140.5" text-anchor="end" class="tick">115</text><text x="44" y="101.3" text-anchor="end" class="tick">120</text><text x="44" y="62.0" text-anchor="end" class="tick">125</text><text x="44" y="22.7" text-anchor="end" class="tick">130</text><text x="52.0" y="292" text-anchor="middle" class="tick">1月</text><text x="171.2" y="292" text-anchor="middle" class="tick">2月</text><text x="284.8" y="292" text-anchor="middle" class="tick">3月</text><text x="409.7" y="292" text-anchor="middle" class="tick">4月</text><text x="534.7" y="292" text-anchor="middle" class="tick">5月</text><text x="653.9" y="292" text-anchor="middle" class="tick">6月</text><text x="778.8" y="292" text-anchor="middle" class="tick">7月</text>
+  <g class="hoverlayer"></g>
+</svg></div>
+<div class="note">期首を100として指数化。最終値 127.6（+27.6%）。含み損の谷が最大ドローダウン 5.3% に相当します。ポジションを持たない期間（フラット区間）が長いのは、セットアップ成立時のみ参戦する設計のためです。</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">03</span><h2>戦略ルール（凍結済み・params_final.json）</h2></div>
+<div class="rules">
+<div class="rule-card"><b>セットアップ（スプリング）</b>日中に過去20日安値ラインを下抜け、終値でラインの上に戻して引けた日。ダブルボトム2点目の「ダマシ確認」を体系化したもの。</div>
+<div class="rule-card"><b>エントリー</b>セットアップ成立日の終値で買い（ロングのみ）。</div>
+<div class="rule-card"><b>損切り</b>反発ヒゲの安値 − 0.5×ATR(14)。翌日以降、日中安値で判定。窓開け時は寄付で約定（不利側処理）。</div>
+<div class="rule-card"><b>利確（構造ターゲット）</b>過去20日高値ライン（レンジ反対側）への到達。N波動・E計算値に相当する目標設定。</div>
+<div class="rule-card"><b>資金管理</b>1トレードのリスク＝口座残高の3%固定。数量＝リスク額÷ストップ幅。検証では3トレードとも厳密に3.0000%。</div>
+<div class="rule-card"><b>コスト</b>スプレッド往復3pips（0.03円/GBP）を決済時に計上。</div>
+</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">04</span><h2>代替案との比較（探索過程の全開示）</h2></div>
+<p>約35構成を評価しました。選択はすべて訓練窓（1〜4月）の成績で行い、テスト窓（5〜7月）は選択後の確認のみに使用しています。ブレイクアウト追随型は全8構成がマイナスで棄却。両方向のスイング反発は訓練窓こそ良好でしたが、テスト窓で売りトレードが上昇トレンドに全敗しました。</p>
+<div class="chart-wrap"><svg viewBox="0 0 880 190" class="chart" role="img"><text x="425.0" y="16" text-anchor="middle" class="ci-lab">訓練窓（1〜4月・選択に使用）</text><text x="735.0" y="16" text-anchor="middle" class="ci-lab">テスト窓（5〜7月・確認のみ）</text><text x="268" y="48" text-anchor="end" class="ci-lab">① ブレイクアウト追随（8構成の最良）</text><line x1="425.0" y1="33" x2="425.0" y2="55" stroke="#d8d2c4" stroke-width="1"/><line x1="735.0" y1="33" x2="735.0" y2="55" stroke="#d8d2c4" stroke-width="1"/><rect x="358.2" y="37" width="66.8" height="14" rx="4" fill="#c4761a"><title>シャープレシオ -1.95</title></rect><text x="352.2" y="48" text-anchor="end" class="bar-val">-1.95</text><rect x="685.3" y="37" width="49.7" height="14" rx="4" fill="#c4761a"><title>シャープレシオ -1.45</title></rect><text x="679.3" y="48" text-anchor="end" class="bar-val">-1.45</text><text x="268" y="84" text-anchor="end" class="ci-lab">② EMA押し目（4構成の最良）</text><line x1="425.0" y1="69" x2="425.0" y2="91" stroke="#d8d2c4" stroke-width="1"/><line x1="735.0" y1="69" x2="735.0" y2="91" stroke="#d8d2c4" stroke-width="1"/><rect x="411.6" y="73" width="13.4" height="14" rx="4" fill="#c4761a"><title>シャープレシオ -0.39</title></rect><text x="405.6" y="84" text-anchor="end" class="bar-val">-0.39</text><rect x="735.0" y="73" width="1.5" height="14" rx="4" fill="#0f7567"><title>シャープレシオ +0.04</title></rect><text x="742.4" y="84" text-anchor="start" class="bar-val">+0.04</text><text x="268" y="120" text-anchor="end" class="ci-lab">③ スイング反発・両方向</text><line x1="425.0" y1="105" x2="425.0" y2="127" stroke="#d8d2c4" stroke-width="1"/><line x1="735.0" y1="105" x2="735.0" y2="127" stroke="#d8d2c4" stroke-width="1"/><rect x="425.0" y="109" width="103.4" height="14" rx="4" fill="#0f7567"><title>シャープレシオ +3.02</title></rect><text x="534.4" y="120" text-anchor="start" class="bar-val">+3.02</text><rect x="673.4" y="109" width="61.6" height="14" rx="4" fill="#c4761a"><title>シャープレシオ -1.80</title></rect><text x="667.4" y="120" text-anchor="end" class="bar-val">-1.80</text><text x="268" y="156" text-anchor="end" class="ci-lab">④ スイング反発・ロングのみ ★採用</text><line x1="425.0" y1="141" x2="425.0" y2="163" stroke="#d8d2c4" stroke-width="1"/><line x1="735.0" y1="141" x2="735.0" y2="163" stroke="#d8d2c4" stroke-width="1"/><rect x="425.0" y="145" width="119.2" height="14" rx="4" fill="#0f7567"><title>シャープレシオ +3.48</title></rect><text x="550.2" y="156" text-anchor="start" class="bar-val">+3.48</text><rect x="735.0" y="145" width="93.2" height="14" rx="4" fill="#0f7567"><title>シャープレシオ +2.72</title></rect><text x="834.2" y="156" text-anchor="start" class="bar-val">+2.72</text></svg></div>
+<div class="note">数値は年率シャープレシオ。採用構成の近傍18構成（期間14/20/26日×ターゲット2種×バッファ3種）は全て通期プラス（最低+1.44）で、特定パラメータへの過剰適合ではないことを確認済みです。</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">05</span><h2>統計的検証（モンテカルロ・有意性）</h2></div>
+<p>日次リターンのブロック・ブートストラップ（1万回）によるシャープレシオの分布です。保有が数週間に及ぶためブロック長を変えて確認したところ、長いブロックほど区間が狭まり、採用した5日ブロックが最も保守的な評価でした。</p>
+<div class="chart-wrap"><svg viewBox="0 0 880 170" class="chart" role="img"><line x1="377.5" y1="12" x2="377.5" y2="144" stroke="#c1392b" stroke-width="1.5" stroke-dasharray="5 4"/><text x="377.5" y="160" text-anchor="middle" class="tick" fill="#c1392b">目標 1.5</text><text x="238" y="34" text-anchor="end" class="ci-lab">ブロック5日（採用・最も保守的）</text><line x1="338.4" y1="30" x2="718.3" y2="30" stroke="#0f7567" stroke-width="3" stroke-linecap="round" opacity="0.55"><title>ブロック5日（採用・最も保守的）: 5–95%区間 [1.04, 5.51]、P(シャープ&gt;1.5)=90%</title></line><circle cx="519.0" cy="30" r="5" fill="#0a564c" stroke="#fbfaf6" stroke-width="2"><title>点推定 3.17</title></circle><text x="732.3" y="34" class="ci-p">P(&gt;1.5)=90%</text><text x="238" y="76" text-anchor="end" class="ci-lab">ブロック15日</text><line x1="392.8" y1="72" x2="681.0" y2="72" stroke="#0f7567" stroke-width="3" stroke-linecap="round" opacity="0.55"><title>ブロック15日: 5–95%区間 [1.68, 5.07]、P(シャープ&gt;1.5)=96%</title></line><circle cx="519.0" cy="72" r="5" fill="#0a564c" stroke="#fbfaf6" stroke-width="2"><title>点推定 3.17</title></circle><text x="695.0" y="76" class="ci-p">P(&gt;1.5)=96%</text><text x="238" y="118" text-anchor="end" class="ci-lab">ブロック30日</text><line x1="404.7" y1="114" x2="635.9" y2="114" stroke="#0f7567" stroke-width="3" stroke-linecap="round" opacity="0.55"><title>ブロック30日: 5–95%区間 [1.82, 4.54]、P(シャープ&gt;1.5)=98%</title></line><circle cx="519.0" cy="114" r="5" fill="#0a564c" stroke="#fbfaf6" stroke-width="2"><title>点推定 3.17</title></circle><text x="649.9" y="118" class="ci-p">P(&gt;1.5)=98%</text><text x="250.0" y="160" text-anchor="middle" class="tick">0</text><text x="505.0" y="160" text-anchor="middle" class="tick">3</text><text x="632.5" y="160" text-anchor="middle" class="tick">4.5</text><text x="760.0" y="160" text-anchor="middle" class="tick">6</text></svg></div>
+<div class="table-wrap"><table>
+<tr><th>検定</th><th>結果</th><th>解釈</th></tr>
+<tr><td>Newey-West修正 t 検定（日次平均リターン）</td><td class="num">t = 2.37</td><td>片側p≒0.009。選択前の素朴な有意性</td></tr>
+<tr><td>約35構成の多重比較調整（White's Reality Check）</td><td class="num">p ≒ 0.042〜0.068</td><td>選択バイアス調整後も有意水準5%前後を維持</td></tr>
+<tr><td>トレードR倍数の符号反転検定</td><td class="num">p = 0.123</td><td>3トレードでは理論下限0.125に張り付き（検出力なし）</td></tr>
+<tr><td>リスク仕様の遵守</td><td class="num">3.0000% ×3件</td><td>リスク額 30,000円／31,853円／36,110円＝各エントリー時残高の厳密に3%</td></tr>
+<tr><td>方向を限定しない両方向版（参考）</td><td class="num">シャープ 1.51</td><td>選択の影響を受けない素の構成でも基準線上＝エッジの実在を補強</td></tr>
+</table></div>
+<p class="note">独立検証エージェントは戦略エンジンを独自に再実装して全数値のバイト一致を確認し、ルックアヘッドバイアスの不存在（コードレビュー＋データ切断テスト）を検証しました（results/final_validation_report.md）。</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">06</span><h2>データ品質</h2></div>
+<ul>
+<li>stooq.comのヒストリカルデータ209営業日（2025-10-01〜2026-07-22。欠損は12/25と1/1の休場2日のみ）。</li>
+<li>別経路（exchange-rates.org系・wise.com）で事前収集した実測アンカー22点との包含関係チェックに合格（例：2/17安値207.24は参照値207.79の下方＝日中実レンジとして整合、7/15高値219.65 vs 参照219.50）。</li>
+<li>寄付と前日終値の乖離は中央値1.1pipsで、24時間市場の連続性として自然。単一OHLCソースである点は限定事項（日中高安の照合は数点のみ）。</li>
+</ul>
+</section>
+
+<section class="caution">
+<div class="sec-head"><span class="sec-num">07</span><h2>限定事項（正直な注意書き）</h2></div>
+<ul>
+<li><b>標本の小ささ：</b>トレード3件・観測7ヶ月。トレード単位の統計検定は構造的に検出力がありません。点推定の再現性と選択調整後p値が主な根拠です。</li>
+<li><b>単一レジーム：</b>全トレードが2026年の円安上昇構造で成立。「ロングのみ」の構成もこのレジームへの適合であり、円高転換時には再評価が必要です。</li>
+<li><b>日足粒度：</b>執行は終値・判定は日足高安。日中の細かな値動き（スリッページ・指標発表時の乖離）は窓開け処理以上にはモデル化していません。スワップ未計上（買い方向はプラス傾向のため保守側）。</li>
+<li><b>フォワード確認前：</b>独立監査の勧告どおり、実運用判断の前に15〜20トレード程度のフォワード（デモ）検証を推奨します。</li>
+</ul>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">08</span><h2>次の一手</h2></div>
+<ul>
+<li>デモ口座でのフォワード検証（セットアップは月1〜2回程度の頻度。15〜20トレードの蓄積目安は約1年）。</li>
+<li>月次でのレジーム点検：安値切り上げ構造が崩れた場合（円高転換）は運用停止し再評価。</li>
+<li>データの定期更新：<code>python3 tools/fetch_stooq_gbpjpy.py</code> → QC → バックテスト再実行までワンコマンドで再現可能。</li>
+</ul>
+</section>
+
+<div class="summary">
+<b>一言でまとめると：</b>「20日安値ラインのダマシ下抜けからの反発だけを買い、反対側のラインで利確する」というシンプルな波乗り戦略が、2026年1〜7月の実データでシャープレシオ3.17・リターン+27.6%・最大DD5.3%を記録し、目標基準を達成しました。ただし3トレード・単一レジームの結果であり、実運用前にフォワード検証が必要です。
+</div>
+
+<footer>Naminori プロジェクト｜GBP/JPY 波乗り戦略 検証結果報告｜2026.07.23<br>
+生成元データ：results/gbpjpy_final/（コミット済み・再現可能）</footer>
+</div>
+
+<div class="tooltip" id="tt"></div>
+<script>
+(function(){
+  var tt = document.getElementById('tt');
+  document.querySelectorAll('svg[data-chart]').forEach(function(svg){
+    var d = JSON.parse(svg.getAttribute('data-chart'));
+    var layer = svg.querySelector('.hoverlayer');
+    var ns = 'http://www.w3.org/2000/svg';
+    var vline = document.createElementNS(ns,'line');
+    vline.setAttribute('stroke','#3a4a5e'); vline.setAttribute('stroke-width','1');
+    vline.setAttribute('stroke-dasharray','3 3'); vline.setAttribute('opacity','0');
+    var dot = document.createElementNS(ns,'circle');
+    dot.setAttribute('r','4'); dot.setAttribute('fill','#0a564c');
+    dot.setAttribute('stroke','#fbfaf6'); dot.setAttribute('stroke-width','2');
+    dot.setAttribute('opacity','0');
+    layer.appendChild(vline); layer.appendChild(dot);
+    function xy(i,v){
+      var n=d.vals.length;
+      var x=d.padL+(d.w-d.padL-d.padR)*(i/(n-1));
+      var y=d.padT+(d.h-d.padT-d.padB)*(1-(v-d.ylo)/(d.yhi-d.ylo));
+      return [x,y];
+    }
+    svg.addEventListener('mousemove',function(ev){
+      var r=svg.getBoundingClientRect();
+      var mx=(ev.clientX-r.left)*d.w/r.width;
+      var n=d.vals.length;
+      var i=Math.round((mx-d.padL)/(d.w-d.padL-d.padR)*(n-1));
+      if(i<0||i>=n){vline.setAttribute('opacity','0');dot.setAttribute('opacity','0');
+        tt.style.opacity='0';return;}
+      var p=xy(i,d.vals[i]);
+      vline.setAttribute('x1',p[0]);vline.setAttribute('x2',p[0]);
+      vline.setAttribute('y1',d.padT);vline.setAttribute('y2',d.h-d.padB);
+      vline.setAttribute('opacity','.6');
+      dot.setAttribute('cx',p[0]);dot.setAttribute('cy',p[1]);dot.setAttribute('opacity','1');
+      tt.textContent=d.dates[i]+'  '+d.vals[i].toFixed(2);
+      tt.style.left=(ev.clientX+14)+'px'; tt.style.top=(ev.clientY-10)+'px';
+      tt.style.opacity='1';
+    });
+    svg.addEventListener('mouseleave',function(){
+      vline.setAttribute('opacity','0');dot.setAttribute('opacity','0');tt.style.opacity='0';
+    });
+  });
+})();
+</script>
+</body>
+</html>
