@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>はじめてでもわかる「波乗り」戦略ガイド</title>
+<style>
+:root{--ink:#16202e;--ink-soft:#3a4a5e;--paper:#f3f0e9;--card:#fbfaf6;--line:#d8d2c4;
+--teal:#0f7567;--teal-d:#0a564c;--amber:#c4761a;--rule:#c1392b;
+--shadow:0 1px 0 rgba(22,32,46,.04),0 12px 30px -18px rgba(22,32,46,.35);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
+color:var(--ink);background:var(--paper);
+background-image:radial-gradient(1200px 500px at 85% -10%,#e9e4d6 0%,transparent 60%);
+line-height:1.95;letter-spacing:.01em;font-size:15.5px;}
+.wrap{max-width:820px;margin:0 auto;padding:48px 24px 80px;}
+.eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:700;color:var(--teal-d);}
+h1{font-size:clamp(26px,4.2vw,38px);font-weight:800;letter-spacing:-.01em;margin:6px 0 8px;line-height:1.4;}
+.sub{color:var(--ink-soft);margin-bottom:24px;}
+section{background:var(--card);border:1px solid var(--line);border-radius:12px;
+box-shadow:var(--shadow);padding:26px 28px;margin-bottom:22px;}
+.sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:12px;}
+.sec-num{font-size:12px;font-weight:800;color:var(--teal-d);letter-spacing:.14em;}
+h2{font-size:20px;font-weight:800;}
+h3{font-size:15.5px;font-weight:700;margin:16px 0 6px;color:var(--teal-d);}
+p{margin-bottom:12px;}
+.hero{border-left:5px solid var(--teal);}
+.lead{font-size:16.5px;font-weight:700;}
+.talk{background:var(--paper);border-radius:10px;padding:12px 16px;margin:10px 0;
+border:1px solid var(--line);}
+.talk b{color:var(--teal-d);}
+.metaphor{background:#e9f2ef;border:1px solid #c5ddd6;border-radius:10px;padding:14px 18px;margin:12px 0;}
+.metaphor .m-title{font-weight:800;color:var(--teal-d);margin-bottom:4px;}
+.chart-wrap{overflow-x:auto;margin:10px 0 4px;}
+.chart{width:100%;height:auto;display:block;min-width:560px;}
+.note{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+.big-num{font-size:26px;font-weight:800;color:var(--teal-d);}
+.warn{border-left:5px solid var(--amber);}
+.warn h2{color:#8a5411;}
+.danger{background:#faeeea;border:1px solid #eccfc5;border-radius:10px;padding:14px 18px;margin:12px 0;}
+.danger b{color:var(--rule);}
+ul,ol{padding-left:1.4em;margin-bottom:12px;}
+li{margin-bottom:8px;}
+.table-wrap{overflow-x:auto;}
+table{border-collapse:collapse;width:100%;font-size:14px;}
+th{text-align:left;font-size:12.5px;color:var(--ink-soft);border-bottom:2px solid var(--ink);
+padding:8px 10px;white-space:nowrap;}
+td{border-bottom:1px solid var(--line);padding:9px 10px;vertical-align:top;}
+td:first-child{white-space:nowrap;font-weight:700;}
+.steps{counter-reset:step;}
+.step{display:flex;gap:14px;margin-bottom:14px;}
+.step .n{flex:none;width:34px;height:34px;border-radius:50%;background:var(--teal);color:#fff;
+font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.step .body b{display:block;margin-bottom:2px;}
+.svg-lab{font-size:12px;fill:var(--ink-soft);}
+.svg-lab-b{font-size:12.5px;font-weight:700;fill:var(--ink);}
+.svg-teal{font-size:12.5px;font-weight:700;fill:var(--teal-d);}
+.svg-red{font-size:12.5px;font-weight:700;fill:var(--rule);}
+.summary{background:var(--ink);color:#f2efe8;border-radius:12px;padding:22px 26px;}
+.summary b{color:#9fd8cc;}
+footer{margin-top:26px;font-size:12px;color:var(--ink-soft);text-align:center;}
+@media (max-width:640px){section{padding:20px 16px;}}
+@media print{body{background:#fff;}section{box-shadow:none;break-inside:avoid;}
+.wrap{padding:0;max-width:none;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">やさしい入門ガイド｜For Beginners</div>
+<h1>はじめてでもわかる<br>「波乗り」戦略ガイド</h1>
+<div class="sub">FXをまったく知らない人向けに、このプロジェクトで作った自動売買戦略を、たとえ話と実際の数字でゼロから説明します。検証レポート（report.html）の入門編です。</div>
+
+<section class="hero">
+<p class="lead">このプロジェクトでやったことを一言でいうと——</p>
+<p>「ポンドと円の交換レートのチャートを毎日ながめて、<b>ある決まった形が出たときだけ買い、決まった場所で売る</b>」というルールをコンピュータのプログラムにして、2026年1月〜7月の実際の値動きで試したら、<b>100万円が約127.6万円になった（計算上）</b>、という話です。</p>
+<p>もちろん「計算上うまくいった」と「これからも儲かる」は全然違う話なので、その注意もこの資料の後半でちゃんと説明します。</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">01</span><h2>そもそもFXって何をしてるの？</h2></div>
+<p>FXは「外国のお金の両替」で利益を狙う取引です。この戦略が扱うのは<b>ポンド円（GBP/JPY）</b>＝「イギリスのお金（ポンド）1枚が日本円で何円か」というレートです。</p>
+<div class="talk">たとえば 1ポンド＝<b>210円</b>のときにポンドを買って、<b>215円</b>に上がってから売れば、1ポンドあたり<b>5円</b>の利益。10,000ポンド分やっていれば<b>5万円</b>の利益です。逆に下がれば同じだけ損します。</div>
+<p>このレートは平日ほぼ24時間、世界中の取引で常に動いています。その動きを記録したのが「チャート」です。</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">02</span><h2>チャートの読み方（1分だけ）</h2></div>
+<p>チャートでよく使う「ローソク足」は、<b>1日分の値動きを1本の棒にまとめたもの</b>です。この戦略は1日1本の「日足（ひあし）」だけを使います。</p>
+<div class="chart-wrap"><svg viewBox="0 0 560 200" class="chart" role="img">
+<line x1="140" y1="30" x2="140" y2="170" stroke="#16202e" stroke-width="2"/>
+<rect x="118" y="60" width="44" height="80" fill="#0f7567" rx="3"/>
+<text x="175" y="36" class="svg-lab">← 高値（この日いちばん高かった値段）</text>
+<text x="175" y="66" class="svg-lab">← 終値（この日の終わりの値段）</text>
+<text x="175" y="140" class="svg-lab">← 始値（この日の始まりの値段）</text>
+<text x="175" y="172" class="svg-lab">← 安値（この日いちばん安かった値段）</text>
+<text x="118" y="192" class="svg-teal">上がった日（陽線）</text>
+<line x1="420" y1="30" x2="420" y2="170" stroke="#16202e" stroke-width="2"/>
+<rect x="398" y="60" width="44" height="80" fill="#c4761a" rx="3"/>
+<text x="398" y="192" class="svg-lab-b" fill="#8a5411">下がった日</text>
+</svg></div>
+<p>大事なのはこれだけです：1本のローソクを見れば「この日は<b>いちばん安いところで何円まで下がり</b>、<b>最終的に何円で終わったか</b>」がわかる。この戦略の買いサインは、まさにこの2つの数字から作られています。</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">03</span><h2>この戦略がやっていること（サーフィンのたとえ）</h2></div>
+<div class="metaphor">
+<div class="m-title">🏄 名前の由来は「波乗り」</div>
+参考にしたプロトレーダー・波乗りあっき〜さんの考え方は、サーフィンにそっくりです。<b>①海に入っていい波が来るまでひたすら待つ → ②波が来た瞬間に乗る → ③波が消える前に降りる。</b>ずっと海の中で泳ぎ続ける（＝ずっと取引し続ける）のではなく、「乗れる波」のときだけ乗るのがコツです。
+</div>
+<div class="steps">
+<div class="step"><div class="n">1</div><div class="body"><b>床（ゆか）のラインを引く</b>
+「過去20日間でいちばん安かった値段」に横線を引きます。ここはみんなが意識する「床」＝支持線です。</div></div>
+<div class="step"><div class="n">2</div><div class="body"><b>「ダマシ」を待つ</b>
+値段が日中に床を割り込んだのに、その日の終わりには床の上に戻ってきた——この形が買いサインです。「下に抜けたぞ！」と売った人たちが間違いだったとわかる形なので、そこから反発しやすいのです。</div></div>
+<div class="step"><div class="n">3</div><div class="body"><b>買ったら、逃げ道を先に決める</b>
+買った瞬間に「ここまで下がったら諦めて売る」という損切りラインを、その日の安値の少し下に置きます。<b>負けたときに失うお金は、口座の3%まで</b>と最初から決めてあります。</div></div>
+<div class="step"><div class="n">4</div><div class="body"><b>「天井」に着いたら降りる</b>
+「過去20日間でいちばん高かった値段」＝天井のラインに届いたら売って利益を確定します。波の端から端まで乗るイメージです。</div></div>
+</div>
+<div class="chart-wrap"><svg viewBox="0 0 720 260" class="chart" role="img">
+<line x1="40" y1="170" x2="680" y2="170" stroke="#c1392b" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="44" y="188" class="svg-red">床：過去20日の最安値ライン</text>
+<line x1="40" y1="60" x2="680" y2="60" stroke="#0f7567" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="44" y="52" class="svg-teal">天井：過去20日の最高値ライン</text>
+<polyline points="60,120 110,140 160,115 210,150 260,135 300,160 330,185 350,162 400,150 450,120 500,130 560,95 620,75 660,62"
+ fill="none" stroke="#16202e" stroke-width="2.4" stroke-linejoin="round"/>
+<circle cx="330" cy="185" r="5" fill="#c1392b"/>
+<text x="238" y="222" class="svg-lab-b">① 日中に床を割るが…</text>
+<circle cx="350" cy="162" r="6" fill="#0a564c"/>
+<text x="362" y="216" class="svg-teal">② 終値で床の上に戻る＝買い！</text>
+<circle cx="660" cy="62" r="6" fill="#0f7567" stroke="#fbfaf6" stroke-width="2"/>
+<text x="530" y="40" class="svg-teal">③ 天井に届いたら売って利確</text>
+<line x1="350" y1="196" x2="430" y2="196" stroke="#c1392b" stroke-width="2"/>
+<text x="438" y="200" class="svg-red">損切りライン（安値の少し下）</text>
+</svg></div>
+<p class="note">実際にあった例：2026年2月17日、ポンド円はこの年いちばん安い値段（207円台前半）まで日中に沈みましたが、終値で床の上に戻りました。戦略はここで買い、約2ヶ月「波に乗って」4月13日に215円で売却。この1回で口座は約14万円（当時残高の約13%）増えました。</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">04</span><h2>移動平均線（EMA）って何？</h2></div>
+<p>チャートに重ねる「なめらかな線」のことで、<b>直近○日分の値段の平均をつないだ線</b>です。毎日の細かいギザギザを消して、「いま全体としてどっちに向かっているか」＝<b>波の流れ</b>を見るための道具です。</p>
+<p>あっき〜さんは3本を使い分けます（本人がブログで明言しています）。</p>
+<div class="table-wrap"><table>
+<tr><th>線</th><th>イメージ</th><th>役割</th></tr>
+<tr><td>EMA25（25日平均）</td><td>さざ波</td><td>短期の反応を見る線。値段が戻ってきやすい目印</td></tr>
+<tr><td>EMA75（75日平均）</td><td>波の背骨</td><td>いま乗っている波の形と角度を見る線</td></tr>
+<tr><td>EMA200（200日平均）</td><td>潮の流れ</td><td>そもそも上げ潮か引き潮か、大きな向きを決める線</td></tr>
+</table></div>
+<p>この戦略では、いちばん大きな「潮の流れ」だけをルールに組み込みました：<b>値段がEMA200より上にあるときだけ買う</b>。つまり「上げ潮のときだけサーフィンする。引き潮になったら海に入らない」という安全装置です。2026年は一度も引き潮にならなかったので、この装置は一度も作動していませんが、将来円高に転換したら自動でお休みモードになります。</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">05</span><h2>損をどう防ぐ？（いちばん大事な話）</h2></div>
+<p>プロのあっき〜さんが一番大事にしているのは、実は「どう勝つか」より<b>「負けたときにいくら失うか」を先に決めておくこと</b>です。この戦略では次のルールになっています。</p>
+<div class="talk"><b>3%ルール：</b>1回の取引で失ってよいのは、口座残高の3%まで。<br>
+口座が100万円なら、1回の負けは最大<b>3万円</b>。仮に10連敗しても口座は約74万円残ります（毎回そのときの残高の3%だから、一気にゼロにはなりません）。</div>
+<p>仕組みはシンプルで、「買った値段」と「損切りライン」の距離から逆算して、<b>ちょうど3%しか失わない量だけ買う</b>ようにプログラムが自動計算します。損切りラインが近い日はたくさん買い、遠い日は少しだけ買う、ということが自動で行われます。</p>
+<p>検証では3回の取引すべてで、リスクがきっちり残高の3.0000%になっていることを第三者チェック（後述）でも確認済みです。</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">06</span><h2>結果の数字の読み方</h2></div>
+<div class="table-wrap"><table>
+<tr><th>数字</th><th>結果</th><th>やさしい意味</th></tr>
+<tr><td>リターン +27.6%</td><td><span class="big-num">100万円 → 127.6万円</span></td><td>約7ヶ月の検証期間での増え方（手数料込みの計算上）</td></tr>
+<tr><td>取引回数 3回</td><td>3勝0敗</td><td>7ヶ月でたった3回。「いい波」しか乗らないので回数は少ない</td></tr>
+<tr><td>最大ドローダウン 5.3%</td><td>一番へこんだ時 −5.3%</td><td>途中経過で一時的に資産が目減りした最大幅。小さいほど安心して続けやすい</td></tr>
+<tr><td>シャープレシオ 3.17</td><td>目標は1.5以上</td><td>「増え方の安定感」の点数。増えた量を、途中のヒヤヒヤ（ブレの大きさ）で割ったもの。1を超えれば良い、2で優秀、と言われる指標</td></tr>
+</table></div>
+<h3>本当に実力？まぐれじゃないの？のチェック</h3>
+<p>ここが今回のプロジェクトのこだわりです。「たまたま上手くいっただけ」を見抜くために、次の検査をしました。</p>
+<ul>
+<li><b>データが本物かの検査：</b>使った値動きデータを、別の情報源の記録22点と突き合わせて一致を確認。</li>
+<li><b>シャッフル検査（モンテカルロ）：</b>日々の値動きの順番をコンピュータで1万回混ぜ直して結果のブレ幅を計測。「シャープレシオが目標の1.5を超える確率は約90%」という結果でした。</li>
+<li><b>第三者チェック：</b>別のAIエージェントが、プログラムを一から作り直して同じ結果が出るか検算。ズル（未来の情報を先に見てしまう計算ミス）がないことも確認しました。</li>
+</ul>
+</section>
+
+<section class="warn">
+<div class="sec-head"><span class="sec-num">07</span><h2>はじめる前に、絶対知っておいてほしいこと</h2></div>
+<div class="danger"><b>過去にうまくいった＝これからも儲かる、ではありません。</b>これがFXの一番の落とし穴です。この検証は「2026年前半のポンド円」という、たまたま上昇の波が続いた時期の結果です。</div>
+<ul>
+<li><b>取引がまだ3回しかない：</b>サイコロを3回振って3回とも6が出たようなもので、実力と運の区別がまだつきません。統計の専門的な検査でも「有望だが、証明にはあと15〜20回の取引が必要」という判定です。</li>
+<li><b>円高になったら前提が崩れる：</b>この期間はずっと円安（ポンド高）の追い風でした。流れが逆になれば、この戦略は自動停止しますが、それまでの利益が保証されるわけではありません。</li>
+<li><b>いきなり本物のお金を使わない：</b>試すなら、まず<b>デモ口座（仮想のお金で練習できる口座）</b>で。この戦略は月1〜2回しかサインが出ないので、様子見には1年くらいかかります。それが正常です。</li>
+<li><b>レバレッジに注意：</b>FXは預けたお金の何倍もの取引ができてしまいます。3%ルールはそのブレーキですが、ルールを破って量を増やせば一瞬で大損できます。ルールを守れることが、手法より大事です。</li>
+</ul>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">08</span><h2>ミニ用語集</h2></div>
+<div class="table-wrap"><table>
+<tr><th>用語</th><th>意味</th></tr>
+<tr><td>ポンド円（GBP/JPY）</td><td>1ポンドが何円かの交換レート。この戦略の対象</td></tr>
+<tr><td>日足（ひあし）</td><td>1日1本のローソク足。この戦略が見る唯一の時間軸</td></tr>
+<tr><td>支持線（しじせん）</td><td>値段が下げ止まりやすい「床」のライン</td></tr>
+<tr><td>ダマシ</td><td>ラインを抜けたと見せかけて戻る動き。この戦略の買いサイン</td></tr>
+<tr><td>損切り（そんぎり）</td><td>あきらめて損を確定すること。傷を浅くする最重要スキル</td></tr>
+<tr><td>利確（りかく）</td><td>利益を確定して売ること</td></tr>
+<tr><td>EMA（指数移動平均線）</td><td>直近を重視した平均の線。相場の流れを見る道具</td></tr>
+<tr><td>バックテスト</td><td>過去のデータでルールを試す模擬実験。未来の保証ではない</td></tr>
+<tr><td>ドローダウン</td><td>資産が一時的にへこんだ幅</td></tr>
+<tr><td>シャープレシオ</td><td>増え方の安定感の点数。増えた量÷ブレの大きさ</td></tr>
+<tr><td>デモ口座</td><td>仮想のお金で練習できる口座。初心者はまずここから</td></tr>
+</table></div>
+</section>
+
+<div class="summary">
+<b>まとめ：</b>この戦略は「20日間の床のラインまで沈んで戻ってきた日だけ買い、天井のラインで売る。負けは1回3%まで。上げ潮のときしか海に入らない」——それだけのシンプルなルールです。2026年前半の実データでは計算上うまくいきましたが、まだ波3回分の実績です。興味が湧いたら、<b>お金を入れずにデモで1年見守る</b>ところから始めてください。詳しい検証の中身は report.html にあります。
+</div>
+
+<footer>Naminori プロジェクト｜はじめてでもわかる「波乗り」戦略ガイド｜2026.07.23<br>
+本資料は投資助言ではなく、学習用の解説です。投資判断はご自身の責任でお願いします。</footer>
+</div>
+</body>
+</html>
