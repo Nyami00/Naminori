@@ -260,8 +260,19 @@ for t in trades:
 chart_ema = line_chart(dates, closes, INK, alo, ahi, 2, lambda v: f"{v:.0f}",
                        "chart-ema", ema_lines + "".join(ema_marks) + ema_labels)
 
-# ---- blog-sourced note for the EMA section (updated after archive reading) ---
-EMA_BLOG_NOTE = ("氏がEMA25・75・200も使用しているとの情報（ユーザー提供・FC2ブログ）を受けた追補検証です。")
+# ---- blog-sourced note for the EMA section (Wayback Machine, FC2 blog) -------
+EMA_BLOG_NOTE = ("FC2版ブログ「あっき〜の波乗り日記」のアーカイブ（Wayback Machine、2014年の記事群）から"
+                 "EMA25・75・200の実際の使い方を確認したうえでの追補検証です。")
+EMA_BLOG_USAGE = """
+<h3>ブログ本文で確認した実際の使い方（アーカイブからの引用要旨）</h3>
+<div class="table-wrap"><table>
+<tr><th>EMA</th><th>氏の使い方（ブログ記事より）</th><th>本戦略との対応</th></tr>
+<tr><td><b>EMA25</b></td><td>短期の反応線・利確目標。「リカクは25EMAを目標にしてました」（ポンド円15分）、「ポンド円は25EMAで反転下落」＝レンジ上限との重なりを抵抗として利用</td><td>3エントリーは全てEMA25の下（−0.3〜−1.6ATR）＝短期線から下に伸び切った反応ゾーンでの買い</td></tr>
+<tr><td><b>EMA75</b></td><td>波の背骨。「節目の高値・安値は75EMAを見て判断」「75EMAが形成している角度＆形状を見る」「ラインは75EMAに沿って引く」、チャネル下辺と75EMAの重なり＝高確率ポイント</td><td>2/17はEMA75の−0.5ATR、6/18はほぼ接地＝氏の言う「節目の安値」での反発をスプリング条件が自動検出</td></tr>
+<tr><td><b>EMA200</b></td><td>目線（レジーム）の決定。「200EMAを上抜け失敗→上昇の流れから下降の流れに変わったと認識し下目線」、「1時間足の200EMAタッチは反発の可能性が高いポイント＝思い切ってLを狙う」</td><td>EMA200ロングゲートとして正式採用（終値&gt;EMA200のときのみ買い）。氏の「目線」の判定を機械化したものに相当</td></tr>
+</table></div>
+<p class="note">氏の記事は主に15分足〜4時間足のデイトレ文脈ですが、EMA25/75/200の役割分担（反応線／波の背骨／目線）は時間足に依存しない枠組みとして書かれており、本戦略（日足）でも同じ構造が観測されました。出典：web.archive.org 上の fxyou1128.blog.fc2.com アーカイブ（2014年）。</p>
+"""
 
 # ---- trade table rows --------------------------------------------------------
 tr_rows = "".join(
@@ -402,6 +413,8 @@ section{{box-shadow:none;break-inside:avoid;}}
 <section>
 <div class="sec-head"><span class="sec-num">04</span><h2>EMA 25/75/200 レビュー（追補検証）</h2></div>
 <p>{EMA_BLOG_NOTE}データを2024年9月まで延長（488営業日）してEMA200の適正なウォームアップを確保し、実データで検証しました。</p>
+{EMA_BLOG_USAGE}
+<h3>2026年実データでの検証</h3>
 {chart_ema}
 <div class="note">黒＝終値、緑＝EMA25、琥珀＝EMA75、破線＝EMA200、▲＝採用戦略のエントリー。検証期間の全144営業日で「終値&gt;EMA200」かつパーフェクトオーダー（EMA25&gt;75&gt;200）が成立した、教科書的なEMA順行相場でした。</div>
 <h3>診断結果</h3>
