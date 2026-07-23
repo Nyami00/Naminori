@@ -51,6 +51,26 @@ def load_bars(csv_path):
     return bars
 
 
+def load_bidask_bars(csv_path):
+    """Load bid/ask daily bars (Dukascopy export). Bars carry BID prices —
+    the side a long position is valued and exited at — plus the close-time
+    bid/ask spread. Buys pay close+spread; see run_backtest. Set
+    spread_jpy=0 with these bars (costs come from the real spread)."""
+    bars = []
+    with open(csv_path, newline="") as f:
+        for row in csv.DictReader(f):
+            bars.append({
+                "date": row["date"],
+                "open": float(row["bid_open"]),
+                "high": float(row["bid_high"]),
+                "low": float(row["bid_low"]),
+                "close": float(row["bid_close"]),
+                "spread": max(0.0, float(row["spread_close"])),
+            })
+    bars.sort(key=lambda b: b["date"])
+    return bars
+
+
 # ---------------------------------------------------------------------------
 # Indicators (all causal: value at index i uses data up to and including i)
 # ---------------------------------------------------------------------------
@@ -168,6 +188,8 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
     def close_position(i, price, reason):
         nonlocal equity, pos
         b = bars[i]
+        if pos["dir"] == -1:
+            price += b.get("spread", 0.0)  # shorts buy back at the ask
         pnl = (price - pos["entry"]) * pos["units"] * pos["dir"]
         cost = p["spread_jpy"] * pos["units"]  # full round-trip cost booked at exit
         equity += pnl - cost
@@ -280,10 +302,14 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
                 stop_dist = p["stop_atr_mult"] * a[i]
                 stop_level = b["close"] - sig * stop_dist
             if sig != 0 and stop_dist > 0:
+                entry_price = b["close"]
+                if sig == 1:
+                    entry_price += b.get("spread", 0.0)  # longs buy at the ask
+                    stop_dist = abs(entry_price - stop_level)
                 risk_amt = p["risk_per_trade"] * equity
                 units = risk_amt / stop_dist
                 pos = {
-                    "dir": sig, "units": units, "entry": b["close"],
+                    "dir": sig, "units": units, "entry": entry_price,
                     "stop": stop_level, "target": target,
                     "best_close": b["close"], "entry_date": date,
                     "risk_amt": risk_amt,

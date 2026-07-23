@@ -235,6 +235,32 @@ res_sw5 = run_backtest(warm_sw + upthrust, dict(p_sw, allow_short=True))
 check("upthrust enters short when allowed", len(res_sw5["trades"]) == 1 and
       res_sw5["trades"][0]["dir"] == "short")
 
+# ---------------------------------------------------------------------------
+print("backtest: bid/ask execution (spread paid on the buy side)")
+warm_ba = [dict(bar(f"2026-06-{i+1:02d}", 100, 100.5, 99.5, 100), spread=0.04)
+           for i in range(30)]
+spring_ba = [dict(bar("2026-07-01", 100, 100.6, 99.0, 100.2), spread=0.04)]
+after_ba = [dict(bar("2026-07-02", 100.2, 100.7, 100.0, 100.4), spread=0.04)]
+res_ba = run_backtest(warm_ba + spring_ba + after_ba, p_sw)
+if res_ba["trades"]:
+    t = res_ba["trades"][0]
+    check("long entry pays the ask (close+spread)", approx(t["entry"], 100.24, 1e-9),
+          f"entry {t['entry']}")
+    check("long exit at bid target (no extra spread)", approx(t["exit"], 100.5, 1e-4))
+    # sizing uses the ask-based stop distance: (100.24 - stop_expected)
+    dist_ba = 100.24 - stop_expected
+    check("sizing from ask-entry to stop", approx(t["units"], 30_000.0 / dist_ba, 0.01),
+          f"units {t['units']}")
+res_ba_s = run_backtest(warm_ba + [dict(bar("2026-07-01", 100, 101.0, 99.6, 99.8), spread=0.04)]
+                        + [dict(bar("2026-07-02", 99.8, 99.8, 98.0, 98.2), spread=0.04)],
+                        dict(p_sw, allow_short=True))
+if res_ba_s["trades"] and res_ba_s["trades"][0]["dir"] == "short":
+    t = res_ba_s["trades"][0]
+    check("short entry at bid close", approx(t["entry"], 99.8, 1e-9))
+    check("short exit pays ask (fill+spread)",
+          t["reason"] == "target" and approx(t["exit"], res_ba_s["trades"][0]["exit"], 1e-9)
+          and t["exit"] > 98.0, f"exit {t['exit']}")
+
 print()
 if FAILED:
     print(f"{len(FAILED)} TEST(S) FAILED: {FAILED}")

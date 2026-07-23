@@ -260,6 +260,67 @@ for t in trades:
 chart_ema = line_chart(dates, closes, INK, alo, ahi, 2, lambda v: f"{v:.0f}",
                        "chart-ema", ema_lines + "".join(ema_marks) + ema_labels)
 
+# ---- decade backtest artifacts -----------------------------------------------
+dec_sum = jload("results/gbpjpy_decade/summary.json")
+dec_m = dec_sum["metrics"]
+dec_years = load_csv("results/gbpjpy_decade/per_year.csv")
+dec_eq = [r for r in load_csv("results/gbpjpy_decade/equity.csv")
+          if r["date"] >= "2015-01-01"]
+
+# per-year return bars (vertical)
+YW, YH = 880, 240
+YL, YB, YT = 64, 34, 30
+years_n = len(dec_years)
+ymax = max(abs(float(r["return"])) for r in dec_years) * 1.25
+zero_y = YT + (YH - YT - YB) * (ymax / (2 * ymax))
+def yy(v):
+    return YT + (YH - YT - YB) * (ymax - v) / (2 * ymax)
+yr_svg = [f'<line x1="{YL}" y1="{zero_y:.1f}" x2="{YW-16}" y2="{zero_y:.1f}" stroke="{INK_SOFT}" stroke-width="1"/>']
+bw = (YW - YL - 16) / years_n
+for k, r in enumerate(dec_years):
+    v = float(r["return"])
+    x = YL + k * bw + bw * 0.18
+    color = TEAL if v >= 0 else AMBER
+    y0, y1 = (yy(v), zero_y) if v >= 0 else (zero_y, yy(v))
+    tip = f'{r["year"]}年: リターン{v:+.1%}, シャープ{r["sharpe"]}, {r["trades"]}トレード'
+    yr_svg.append(
+        f'<rect x="{x:.1f}" y="{y0:.1f}" width="{bw*0.64:.1f}" height="{max(1.5,y1-y0):.1f}" '
+        f'rx="4" fill="{color}"><title>{tip}</title></rect>'
+        f'<text x="{x+bw*0.32:.1f}" y="{(y0-6) if v>=0 else (y1+15):.1f}" text-anchor="middle" '
+        f'class="bar-val">{v*100:+.0f}%</text>'
+        f'<text x="{x+bw*0.32:.1f}" y="{YH-10}" text-anchor="middle" class="tick">{r["year"][2:]}</text>')
+yr_svg.append(f'<text x="{YL-8}" y="{zero_y+4:.1f}" text-anchor="end" class="tick">0%</text>')
+chart_years = (f'<div class="chart-wrap"><svg viewBox="0 0 {YW} {YH}" class="chart" role="img">'
+               f'{"".join(yr_svg)}</svg></div>')
+
+# decade equity (indexed 100)
+dec_idx = [float(r["equity"]) / 10000.0 for r in dec_eq]
+dlo, dhi = min(dec_idx) - 3, max(dec_idx) + 4
+dec_end = (f'<text x="{W-PAD_R-4}" y="{yscale(dec_idx[-1],dlo,dhi)-8:.1f}" '
+           f'text-anchor="end" class="mark-label">{dec_idx[-1]:.1f}</text>')
+def year_ticks(ds):
+    out = []
+    for i, d in enumerate(ds):
+        if i == 0 or d[:4] != ds[i-1][:4]:
+            out.append((i, d[:4]))
+    return out
+dec_dates = [r["date"] for r in dec_eq]
+dn = len(dec_dates)
+dec_grid, dec_labels = [], []
+for t in (80, 90, 100, 110, 120):
+    if dlo <= t <= dhi:
+        y = yscale(t, dlo, dhi)
+        dec_grid.append(f'<line x1="{PAD_L}" y1="{y:.1f}" x2="{W-PAD_R}" y2="{y:.1f}" stroke="{LINE}" stroke-width="1"/>')
+        dec_labels.append(f'<text x="{PAD_L-8}" y="{y+4:.1f}" text-anchor="end" class="tick">{t}</text>')
+for i, lab in year_ticks(dec_dates):
+    dec_labels.append(f'<text x="{xscale(i,dn):.1f}" y="{H-8}" text-anchor="middle" class="tick">{lab}</text>')
+dec_pts = " ".join(f"{xscale(i,dn):.1f},{yscale(v,dlo,dhi):.1f}" for i, v in enumerate(dec_idx))
+chart_decade_eq = (f'<div class="chart-wrap"><svg viewBox="0 0 {W} {H}" class="chart" role="img">'
+                   f'{"".join(dec_grid)}'
+                   f'<line x1="{PAD_L}" y1="{H-PAD_B}" x2="{W-PAD_R}" y2="{H-PAD_B}" stroke="{INK_SOFT}" stroke-width="1"/>'
+                   f'<polyline points="{dec_pts}" fill="none" stroke="{TEAL}" stroke-width="2" stroke-linejoin="round"/>'
+                   f'{dec_end}{"".join(dec_labels)}</svg></div>')
+
 # ---- blog-sourced note for the EMA section (Wayback Machine archives) --------
 EMA_BLOG_NOTE = ("参考指定のアメブロ本体（ポンド円 波乗り日記）とFC2版ブログのアーカイブ（Wayback Machine、"
                  "2013〜2018年の記事群）を読み、EMA25・75・200の実際の使い方を本人の記述で確認したうえでの"
@@ -381,7 +442,7 @@ section{{box-shadow:none;break-inside:avoid;}}
 <div class="tile"><div class="v">{m["max_drawdown"]*100:.1f}%</div><div class="l">最大ドローダウン</div><div class="s">日次時価評価ベース</div></div>
 <div class="tile"><div class="v">3 / 3</div><div class="l">勝ちトレード / 総数</div><div class="s">全て構造ターゲット到達（平均 +{m["avg_r_multiple"]:.2f}R）</div></div>
 </div>
-<div class="qual">限定事項：トレード数3件・円安上昇レジーム単一期間の結果であり、将来の同水準の成績を統計的に保証するものではありません（詳細は第5章・第7章）。</div>
+<div class="qual">限定事項：この数字は課題指定の検証期間（2026年1〜7月）のものです。同じルールを2015〜2026年の10年に通すと<b>シャープレシオ0.10・総リターン+5.8%</b>まで低下します（第7章）。本戦略は円安上昇レジーム特化型であり、将来の同水準の成績を保証するものではありません。</div>
 </section>
 
 <section>
@@ -460,7 +521,23 @@ section{{box-shadow:none;break-inside:avoid;}}
 </section>
 
 <section>
-<div class="sec-head"><span class="sec-num">07</span><h2>データ品質</h2></div>
+<div class="sec-head"><span class="sec-num">07</span><h2>10年検証（2015〜2026・Dukascopy実スプレッド）</h2></div>
+<p>2026年で確定した凍結パラメータを<b>一切調整せずに</b>、Dukascopy（スイスのFXブローカー）のBid/Ask別データ2014〜2026年（3,274営業日）に適用しました。執行は「買いはAsk・決済はBid」で、<b>その日の実測スプレッドが全約定に組み込まれています</b>（ティックデータ12日分のサンプル計測で妥当性を確認済み：通常日は課金スプレッドとティック実測が数厘以内で一致、Brexit級のイベント日はむしろ過大課金の保守側）。ロットは残高の3%リスクで複利連動です。</p>
+<div class="tiles">
+<div class="tile"><div class="v">{dec_m["sharpe_annualized"]:.2f}</div><div class="l">シャープレシオ（10年）</div><div class="s">2026年単体の3.17から大幅低下。統計的にはゼロと区別不能（CI [−0.38, 0.58]）</div></div>
+<div class="tile"><div class="v">+{dec_m["total_return"]*100:.1f}%</div><div class="l">総リターン（11.5年）</div><div class="s">年率+{dec_m["cagr"]*100:.1f}%。ほぼ横ばい</div></div>
+<div class="tile"><div class="v">{dec_m["max_drawdown"]*100:.1f}%</div><div class="l">最大ドローダウン</div><div class="s">2026年単体の5.3%より遥かに深い</div></div>
+<div class="tile"><div class="v">{dec_m["num_trades"]}</div><div class="l">トレード数（勝率{dec_m["win_rate"]*100:.0f}%）</div><div class="s">平均+{dec_m["avg_r_multiple"]:.2f}R、最悪−1.0R（3%リスク遵守）</div></div>
+</div>
+<h3>年別リターン</h3>
+{chart_years}
+<h3>資産推移（期首100・複利3%リスク）</h3>
+{chart_decade_eq}
+<div class="note">読み取れること：①2026年の好成績（Dukascopyデータでも+21.9%と方向一致で再現）は<b>2022年以降の円安レジームに依存</b>しており、2015〜2021年は横ばい〜マイナス。②EMA200ゲートは2016年（Brexit）と2019年に一度もエントリーさせず、下落年の大負けを回避（設計どおりの防御）。③つまり本戦略は「上昇レジーム検出時のみ機能する追い風特化型」であり、常時稼働で資産を増やし続ける戦略ではない。この10年検証こそが第8章の限定事項を定量化した本命のアウトオブサンプルテストです。</div>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">08</span><h2>データ品質</h2></div>
 <ul>
 <li>stooq.comのヒストリカルデータ209営業日（2025-10-01〜2026-07-22。欠損は12/25と1/1の休場2日のみ）。</li>
 <li>別経路（exchange-rates.org系・wise.com）で事前収集した実測アンカー22点との包含関係チェックに合格（例：2/17安値207.24は参照値207.79の下方＝日中実レンジとして整合、7/15高値219.65 vs 参照219.50）。</li>
@@ -469,17 +546,17 @@ section{{box-shadow:none;break-inside:avoid;}}
 </section>
 
 <section class="caution">
-<div class="sec-head"><span class="sec-num">08</span><h2>限定事項（正直な注意書き）</h2></div>
+<div class="sec-head"><span class="sec-num">09</span><h2>限定事項（正直な注意書き）</h2></div>
 <ul>
 <li><b>標本の小ささ：</b>トレード3件・観測7ヶ月。トレード単位の統計検定は構造的に検出力がありません。点推定の再現性と選択調整後p値が主な根拠です。</li>
-<li><b>単一レジーム：</b>全トレードが2026年の円安上昇構造で成立。「ロングのみ」の構成もこのレジームへの適合であり、円高転換時には再評価が必要です。</li>
+<li><b>レジーム依存（10年検証で定量化済み）：</b>2015〜2026年の通し検証ではシャープレシオ0.10・最大DD24.1%。本戦略が機能するのは円安上昇レジームに限られ、2015〜2021年はほぼ横ばい〜マイナスでした（第7章）。</li>
 <li><b>日足粒度：</b>執行は終値・判定は日足高安。日中の細かな値動き（スリッページ・指標発表時の乖離）は窓開け処理以上にはモデル化していません。スワップ未計上（買い方向はプラス傾向のため保守側）。</li>
 <li><b>フォワード確認前：</b>独立監査の勧告どおり、実運用判断の前に15〜20トレード程度のフォワード（デモ）検証を推奨します。</li>
 </ul>
 </section>
 
 <section>
-<div class="sec-head"><span class="sec-num">09</span><h2>次の一手</h2></div>
+<div class="sec-head"><span class="sec-num">10</span><h2>次の一手</h2></div>
 <ul>
 <li>デモ口座でのフォワード検証（セットアップは月1〜2回程度の頻度。15〜20トレードの蓄積目安は約1年）。</li>
 <li>月次でのレジーム点検：安値切り上げ構造が崩れた場合（円高転換）は運用停止し再評価。</li>
@@ -488,7 +565,7 @@ section{{box-shadow:none;break-inside:avoid;}}
 </section>
 
 <div class="summary">
-<b>一言でまとめると：</b>「20日安値ラインのダマシ下抜けからの反発だけを買い、反対側のラインで利確する」というシンプルな波乗り戦略が、2026年1〜7月の実データでシャープレシオ{m["sharpe_annualized"]:.2f}・リターン+{m["total_return"]*100:.1f}%・最大DD{m["max_drawdown"]*100:.1f}%を記録し、目標基準を達成しました。ただし3トレード・単一レジームの結果であり、実運用前にフォワード検証が必要です。
+<b>一言でまとめると：</b>「20日安値ラインのダマシ下抜けからの反発だけを買い、反対側のラインで利確する」というシンプルな波乗り戦略が、課題指定の検証期間（2026年1〜7月）の実データでシャープレシオ{m["sharpe_annualized"]:.2f}・リターン+{m["total_return"]*100:.1f}%・最大DD{m["max_drawdown"]*100:.1f}%を記録し、目標基準を達成しました。ただし同じルールを10年（2015〜2026）に通すと<b>シャープレシオ{dec_m["sharpe_annualized"]:.2f}・総リターン+{dec_m["total_return"]*100:.1f}%</b>まで低下する円安レジーム特化型であることも実スプレッドで定量化済みです。実運用するなら「上昇レジームの検出時のみ稼働」という前提とフォワード検証が必須です。
 </div>
 
 <footer>Naminori プロジェクト｜GBP/JPY 波乗り戦略 検証結果報告｜2026.07.23<br>

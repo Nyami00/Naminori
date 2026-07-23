@@ -1,0 +1,37 @@
+{
+  "data_file": "data/gbpjpy_dukascopy_daily.csv",
+  "note": "frozen 2026 walk-forward params applied unchanged to 2015-2026; execution buys at ask, exits at bid; UTC-day bars",
+  "bars": 3274,
+  "first_date": "2014-01-01",
+  "last_date": "2026-07-22",
+  "eval_start": "2015-01-01",
+  "start_equity": 1000000.0,
+  "params": {
+    "mode": "swing",
+    "entry_lookback": 20,
+    "pb_ema": 20,
+    "trend_ema": 50,
+    "atr_period": 14,
+    "stop_atr_mult": 2.0,
+    "trail_atr_mult": 3.0,
+    "swing_wick_atr": 0.5,
+    "swing_target": "boundary",
+    "swing_gate_ema": 200,
+    "risk_per_trade": 0.03,
+    "spread_jpy": 0.0,
+    "allow_short": false
+  },
+  "metrics": {
+    "days": 3013,
+    "total_return": 0.0582,
+    "cagr": 0.0047,
+    "sharpe_annualized": 0.101,
+    "sortino_annualized": 0.139,
+    "max_drawdown": 0.2406,
+    "num_trades": 33,
+    "win_rate": 0.364,
+    "avg_r_multiple": 0.095,
+    "best_r": 5.385,
+    "worst_r": -1.0
+  }
+}
