@@ -110,11 +110,17 @@ def rolling_min(values, period):
 # ---------------------------------------------------------------------------
 
 DEFAULT_PARAMS = {
-    "entry_lookback": 20,   # new-wave breakout: close above prior N-day close high
-    "trend_ema": 50,        # only trade in the direction of this EMA
+    "mode": "breakout",     # "breakout" (new-wave Donchian), "pullback" (dip-buy in
+                            # trend), or "swing" (failed-break rejection at range edges)
+    "entry_lookback": 20,   # breakout: close above prior N-day close high;
+                            # swing: range lookback for the support/resistance lines
+    "pb_ema": 20,           # pullback: the dynamic support/resistance line being touched
+    "trend_ema": 50,        # only trade in the direction of this EMA (breakout/pullback)
     "atr_period": 14,
-    "stop_atr_mult": 2.0,   # initial stop distance in ATRs (proxy for "below swing")
-    "trail_atr_mult": 3.0,  # chandelier trailing stop distance in ATRs
+    "stop_atr_mult": 2.0,   # initial stop distance in ATRs (breakout/pullback)
+    "trail_atr_mult": 3.0,  # chandelier trailing stop distance in ATRs (breakout/pullback)
+    "swing_wick_atr": 0.5,  # swing: stop buffer below the rejection wick, in ATRs
+    "swing_target": "2r",   # swing: "2r" (two risk units) or "boundary" (opposite line)
     "risk_per_trade": 0.03, # fraction of current equity risked per trade
     "spread_jpy": 0.03,     # round-trip cost in JPY per unit of GBP (3 pips)
     "allow_short": True,
@@ -139,10 +145,15 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
         p.update(params)
 
     closes = [b["close"] for b in bars]
+    highs = [b["high"] for b in bars]
+    lows = [b["low"] for b in bars]
     a = atr(bars, p["atr_period"])
     tr_ema = ema(closes, p["trend_ema"])
     hi_n = rolling_max(closes, p["entry_lookback"])
     lo_n = rolling_min(closes, p["entry_lookback"])
+    pb = ema(closes, p["pb_ema"])
+    rng_hi = rolling_max(highs, p["entry_lookback"])   # swing: resistance line
+    rng_lo = rolling_min(lows, p["entry_lookback"])    # swing: support line
 
     equity = start_equity
     pos = None  # dict(dir, units, entry, stop, best_close, entry_date, risk_amt)
@@ -186,8 +197,17 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
                 fill = max(stop, open_proxy)
                 close_position(i, fill, "stop")
 
+        # --- 1b) swing positions: fixed profit target, checked after the stop
+        # (pessimistic ordering when both are touched on the same day)
+        if pos is not None and pos.get("target") is not None:
+            tgt = pos["target"]
+            if pos["dir"] == 1 and b["high"] >= tgt:
+                close_position(i, tgt, "target")
+            elif pos["dir"] == -1 and b["low"] <= tgt:
+                close_position(i, tgt, "target")
+
         # --- 2) end-of-day: update trail from today's data (effective tomorrow)
-        if pos is not None:
+        if pos is not None and pos.get("target") is None:
             if pos["dir"] == 1:
                 pos["best_close"] = max(pos["best_close"], b["close"])
                 cand = pos["best_close"] - p["trail_atr_mult"] * a[i]
@@ -198,31 +218,71 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
                 pos["stop"] = min(pos["stop"], cand)
 
         # --- 3) signals on today's close
-        long_sig = hi_n[i] is not None and b["close"] > hi_n[i] and b["close"] > tr_ema[i]
-        short_sig = (p["allow_short"] and lo_n[i] is not None
-                     and b["close"] < lo_n[i] and b["close"] < tr_ema[i])
+        if p["mode"] == "pullback":
+            # dip-buy in an established up-wave: the day dips into the EMA
+            # support zone and closes back above it (the pullback held);
+            # symmetric for rallies into resistance during a down-wave
+            uptrend = pb[i] > tr_ema[i] and b["close"] > tr_ema[i]
+            downtrend = pb[i] < tr_ema[i] and b["close"] < tr_ema[i]
+            long_sig = uptrend and b["low"] <= pb[i] and b["close"] >= pb[i]
+            short_sig = (p["allow_short"] and downtrend
+                         and b["high"] >= pb[i] and b["close"] <= pb[i])
+        elif p["mode"] == "swing":
+            # failed break of a range edge: intraday push beyond the prior
+            # K-day extreme that closes back inside the range (spring /
+            # upthrust - the systematic form of the double-bottom / double-top
+            # rejection at a horizontal line)
+            long_sig = (rng_lo[i] is not None and b["low"] < rng_lo[i]
+                        and b["close"] > rng_lo[i])
+            short_sig = (p["allow_short"] and rng_hi[i] is not None
+                         and b["high"] > rng_hi[i] and b["close"] < rng_hi[i])
+        else:
+            long_sig = hi_n[i] is not None and b["close"] > hi_n[i] and b["close"] > tr_ema[i]
+            short_sig = (p["allow_short"] and lo_n[i] is not None
+                         and b["close"] < lo_n[i] and b["close"] < tr_ema[i])
 
-        # wave-break flip: opposite breakout while holding
-        if pos is not None:
-            if pos["dir"] == 1 and short_sig:
-                close_position(i, b["close"], "flip")
-            elif pos["dir"] == -1 and long_sig:
-                close_position(i, b["close"], "flip")
+        # wave-break exits while holding (swing mode exits only via stop/target)
+        if pos is not None and p["mode"] != "swing":
+            if p["mode"] == "pullback":
+                # the wave is broken when price closes through the trend EMA
+                if pos["dir"] == 1 and b["close"] < tr_ema[i]:
+                    close_position(i, b["close"], "trend_break")
+                elif pos["dir"] == -1 and b["close"] > tr_ema[i]:
+                    close_position(i, b["close"], "trend_break")
+            else:
+                # breakout mode: opposite breakout while holding -> flip
+                if pos["dir"] == 1 and short_sig:
+                    close_position(i, b["close"], "flip")
+                elif pos["dir"] == -1 and long_sig:
+                    close_position(i, b["close"], "flip")
 
         # --- 4) entries at today's close
         if pos is None and (start_date is None or date >= start_date):
             sig = 1 if long_sig else (-1 if short_sig else 0)
-            if sig != 0:
+            target = None
+            if sig != 0 and p["mode"] == "swing":
+                # stop just beyond the rejection wick; target from structure
+                wick = b["low"] if sig == 1 else b["high"]
+                stop_level = wick - sig * p["swing_wick_atr"] * a[i]
+                stop_dist = abs(b["close"] - stop_level)
+                if p["swing_target"] == "boundary":
+                    target = rng_hi[i] if sig == 1 else rng_lo[i]
+                    if (target - b["close"]) * sig <= 0:
+                        sig = 0  # opposite line already passed; no room to trade
+                else:
+                    target = b["close"] + sig * 2.0 * stop_dist
+            elif sig != 0:
                 stop_dist = p["stop_atr_mult"] * a[i]
-                if stop_dist > 0:
-                    risk_amt = p["risk_per_trade"] * equity
-                    units = risk_amt / stop_dist
-                    pos = {
-                        "dir": sig, "units": units, "entry": b["close"],
-                        "stop": b["close"] - sig * stop_dist,
-                        "best_close": b["close"], "entry_date": date,
-                        "risk_amt": risk_amt,
-                    }
+                stop_level = b["close"] - sig * stop_dist
+            if sig != 0 and stop_dist > 0:
+                risk_amt = p["risk_per_trade"] * equity
+                units = risk_amt / stop_dist
+                pos = {
+                    "dir": sig, "units": units, "entry": b["close"],
+                    "stop": stop_level, "target": target,
+                    "best_close": b["close"], "entry_date": date,
+                    "risk_amt": risk_amt,
+                }
 
         # --- 5) mark to market
         mtm = equity
@@ -245,11 +305,13 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
 
 def compute_metrics(result, trading_days_per_year=252, eval_start=None):
     eq = result["equity_curve"]
+    trades = result["trades"]
     if eval_start is not None:
         # keep the last point before eval_start as the base so the first
-        # evaluated day has a return
+        # evaluated day has a return; trade stats cover the same window
         idx = next((k for k, (d, _) in enumerate(eq) if d >= eval_start), 0)
         eq = eq[max(0, idx - 1):]
+        trades = [t for t in trades if t["entry_date"] >= eval_start]
     values = [v for _, v in eq]
     rets = []
     for j in range(1, len(values)):
@@ -273,7 +335,6 @@ def compute_metrics(result, trading_days_per_year=252, eval_start=None):
         if peak > 0:
             max_dd = max(max_dd, (peak - v) / peak)
 
-    trades = result["trades"]
     wins = [t for t in trades if t["pnl_jpy"] > 0]
     total_ret = values[-1] / values[0] - 1.0 if values and values[0] > 0 else 0.0
     years = n / trading_days_per_year if n else 0.0

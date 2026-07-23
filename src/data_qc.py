@@ -74,20 +74,41 @@ def main():
     with open(args.anchors) as f:
         anchors = json.load(f)
     checked = 0
+    # Anchor values come from reference-rate sites that sample a handful of
+    # snapshots per day, so they must lie WITHIN the true intraday range:
+    #   - an anchor "low" can be above the dataset low, never meaningfully below
+    #   - an anchor "high" can be below the dataset high, never meaningfully above
+    #   - an anchor "close" is a snapshot near (but not exactly at) the daily
+    #     boundary: require containment in the day's range, and warn if it
+    #     deviates from the dataset close by more than the tolerance
     for a in anchors["daily_points"]:
         r = by_date.get(a["date"])
         if r is None:
             warnings.append(f"anchor {a['date']}: date missing from dataset")
             continue
+        rng_lo, rng_hi = r["low"] - args.tolerance, r["high"] + args.tolerance
         for field in ("low", "high", "close"):
             v = a.get(field)
             if v is None:
                 continue
             checked += 1
-            if abs(r[field] - v) > args.tolerance:
+            if not (rng_lo <= v <= rng_hi):
                 errors.append(
-                    f"anchor mismatch {a['date']} {field}: dataset {r[field]} vs anchor {v} "
-                    f"(source: {a['source']})")
+                    f"anchor outside day range {a['date']} {field}: anchor {v} vs "
+                    f"dataset range {r['low']}-{r['high']} (source: {a['source']})")
+                continue
+            if field == "low" and r["low"] > v + args.tolerance:
+                errors.append(
+                    f"anchor low violated {a['date']}: dataset low {r['low']} above "
+                    f"anchor low {v} (source: {a['source']})")
+            elif field == "high" and r["high"] < v - args.tolerance:
+                errors.append(
+                    f"anchor high violated {a['date']}: dataset high {r['high']} below "
+                    f"anchor high {v} (source: {a['source']})")
+            elif field == "close" and abs(r["close"] - v) > args.tolerance:
+                warnings.append(
+                    f"anchor close deviates {a['date']}: dataset {r['close']} vs snapshot "
+                    f"{v}, inside day range (boundary-time artifact; source: {a['source']})")
 
     print(f"rows={len(rows)}  anchor_values_checked={checked}")
     for w in warnings:

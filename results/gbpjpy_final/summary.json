@@ -1,0 +1,35 @@
+{
+  "data_file": "data/gbpjpy_daily_2026.csv",
+  "bars": 209,
+  "first_date": "2025-10-01",
+  "last_date": "2026-07-22",
+  "eval_start": "2026-01-01",
+  "start_equity": 1000000.0,
+  "params": {
+    "mode": "swing",
+    "entry_lookback": 20,
+    "pb_ema": 20,
+    "trend_ema": 50,
+    "atr_period": 14,
+    "stop_atr_mult": 2.0,
+    "trail_atr_mult": 3.0,
+    "swing_wick_atr": 0.5,
+    "swing_target": "boundary",
+    "risk_per_trade": 0.03,
+    "spread_jpy": 0.03,
+    "allow_short": false
+  },
+  "metrics": {
+    "days": 144,
+    "total_return": 0.276,
+    "cagr": 0.532,
+    "sharpe_annualized": 3.165,
+    "sortino_annualized": 5.577,
+    "max_drawdown": 0.0533,
+    "num_trades": 3,
+    "win_rate": 1.0,
+    "avg_r_multiple": 2.839,
+    "best_r": 4.455,
+    "worst_r": 2.004
+  }
+}

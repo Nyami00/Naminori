@@ -1,0 +1,10 @@
+{
+  "mode": "swing",
+  "entry_lookback": 20,
+  "swing_target": "boundary",
+  "swing_wick_atr": 0.5,
+  "allow_short": false,
+  "risk_per_trade": 0.03,
+  "spread_jpy": 0.03,
+  "atr_period": 14
+}

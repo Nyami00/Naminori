@@ -20,10 +20,23 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from strategy import load_bars, run_backtest, compute_metrics
 
-GRID = {
-    "entry_lookback": [10, 20],
-    "trail_atr_mult": [2.5, 3.5],
-    "stop_atr_mult": [1.5, 2.0],
+GRIDS = {
+    "breakout": {
+        "entry_lookback": [10, 20],
+        "trail_atr_mult": [2.5, 3.5],
+        "stop_atr_mult": [1.5, 2.0],
+    },
+    # pullback mode has fewer free parameters by design: the EMAs stay at the
+    # classic 20/50 and only the risk geometry is searched
+    "pullback": {
+        "trail_atr_mult": [2.5, 3.5],
+        "stop_atr_mult": [1.5, 2.0],
+    },
+    # swing mode: range lookback and target style only
+    "swing": {
+        "entry_lookback": [14, 20],
+        "swing_target": ["2r", "boundary"],
+    },
 }
 
 
@@ -37,12 +50,15 @@ def main():
     ap.add_argument("--train-end", required=True)
     ap.add_argument("--eval-start", default=None,
                     help="first date counted in metrics (skip warmup)")
+    ap.add_argument("--mode", default="breakout", choices=sorted(GRIDS))
     args = ap.parse_args()
 
     bars = load_bars(args.data)
     train_bars = slice_bars(bars, args.train_end)
 
-    combos = [dict(zip(GRID, vals)) for vals in itertools.product(*GRID.values())]
+    grid = GRIDS[args.mode]
+    combos = [dict(zip(grid, vals), mode=args.mode)
+              for vals in itertools.product(*grid.values())]
     ranked = []
     for c in combos:
         res = run_backtest(train_bars, c, start_date=args.eval_start)
