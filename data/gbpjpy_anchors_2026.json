@@ -1,0 +1,36 @@
+{
+  "description": "Real GBP/JPY reference points for Jan-Jul 2026 collected via web search on 2026-07-23. These are the ONLY externally verified GBP/JPY values obtainable in this sandbox (network egress allowlist blocks all market-data hosts; session web-search budget 200/200 exhausted during collection). They are NOT sufficient for a backtest; they serve as quality-control anchors for validating any full dataset supplied later (see src/data_qc.py).",
+  "collected_at": "2026-07-23",
+  "sources": [
+    "exchange-rates.org per-day pages (via web search digests)",
+    "exchangerates.org.uk 2026 year page (via web search digests)",
+    "wise.com history (via web search digests)"
+  ],
+  "daily_points": [
+    {"date": "2026-01-02", "low": 211.17, "high": 211.30, "close": null, "source": "exchange-rates.org"},
+    {"date": "2026-02-17", "low": 207.7855, "high": null, "close": 207.93, "source": "exchangerates.org.uk (low, marked 2026 worst) / exchange-rates.org (close); minor source conflict noted"},
+    {"date": "2026-02-18", "low": null, "high": null, "close": 207.697, "source": "wise.com"},
+    {"date": "2026-04-29", "low": null, "high": 216.1368, "close": null, "source": "exchangerates.org.uk (marked 2026 best as of mid-July page cache)"},
+    {"date": "2026-05-06", "low": 211.90, "high": 214.14, "close": null, "source": "exchange-rates.org JPY->GBP page, reciprocal of 0.00471921/0.00466988"},
+    {"date": "2026-05-12", "low": null, "high": null, "close": 213.10, "source": "exchange-rates.org"},
+    {"date": "2026-06-25", "low": null, "high": null, "close": 213.42871, "source": "exchange-rates.org"},
+    {"date": "2026-06-26", "low": null, "high": null, "close": 213.42123, "source": "exchange-rates.org"},
+    {"date": "2026-06-29", "low": null, "high": null, "close": 214.71775, "source": "exchange-rates.org"},
+    {"date": "2026-06-30", "low": 214.577, "high": null, "close": 215.59377, "source": "wise.com (low) / exchange-rates.org (close)"},
+    {"date": "2026-07-01", "low": null, "high": null, "close": 215.85853, "source": "exchange-rates.org"},
+    {"date": "2026-07-02", "low": null, "high": null, "close": 215.03977, "source": "exchange-rates.org"},
+    {"date": "2026-07-03", "low": null, "high": null, "close": 215.43014, "source": "exchange-rates.org"},
+    {"date": "2026-07-06", "low": null, "high": 217.071, "close": 217.07, "source": "exchange-rates.org (sources vary 217.032-217.071)"},
+    {"date": "2026-07-15", "low": null, "high": 219.5016, "close": null, "source": "exchangerates.org.uk 180-day page"},
+    {"date": "2026-07-17", "low": null, "high": null, "close": 218.4, "source": "exchange-rates.org (from 1 JPY = 0.004579 GBP)"},
+    {"date": "2026-07-22", "low": null, "high": null, "close": 218.1284, "source": "exchange-rates.org"}
+  ],
+  "aggregates": [
+    {"metric": "2026_worst_rate", "value": 207.7855, "date": "2026-02-17", "source": "exchangerates.org.uk year page"},
+    {"metric": "2026_best_rate_as_of_midjuly_cache", "value": 216.1368, "date": "2026-04-29", "source": "exchangerates.org.uk year page (cached before the mid-July rally)"},
+    {"metric": "high_around", "value": 219.5016, "date": "2026-07-15", "source": "exchangerates.org.uk 180-day page"},
+    {"metric": "2026_average_rate", "value": 212.4022, "date": null, "source": "exchangerates.org.uk year page"},
+    {"metric": "avg_180d_2026-01-22_to_2026-07-19", "value": 213.25, "date": null, "source": "exchangerates.org.uk 180-day page"}
+  ],
+  "cross_check": "USDJPY closes from the user's own Notion market-data DB imply GBPUSD ~1.326-1.352 when combined with these GBPJPY closes (e.g. 2026-06-30: 215.59/162.58=1.326; 2026-05-12: 213.10/157.58=1.352), a plausible 2026 cable range - the two independent datasets are mutually consistent."
+}

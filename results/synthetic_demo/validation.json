@@ -1,0 +1,34 @@
+{
+  "recomputed_sharpe": 1.033,
+  "reported_sharpe": 1.033,
+  "sharpe_recomputation_matches": true,
+  "n_daily_returns": 145,
+  "n_trades": 6,
+  "monte_carlo": {
+    "method": "moving-block bootstrap, block=5, n=10000, seed=12345",
+    "sharpe_ci_5_95": [
+      -1.195,
+      3.451
+    ],
+    "sharpe_median": 1.153,
+    "prob_sharpe_above_target": 0.3974,
+    "prob_sharpe_above_zero": 0.7917
+  },
+  "significance": {
+    "newey_west_tstat_daily_mean": 0.734,
+    "signflip_pvalue_trade_expectancy": 0.2351
+  },
+  "trade_order_mc": {
+    "max_dd_median": 0.0455,
+    "max_dd_p95": 0.0744
+  },
+  "risk_spec": {
+    "risk_per_trade_config": 0.03,
+    "worst_trade_r_multiple": -1.009,
+    "within_2R_gap_allowance": true
+  },
+  "target": {
+    "sharpe_target": 1.5,
+    "point_estimate_meets_target": false
+  }
+}

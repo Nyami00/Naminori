@@ -1,0 +1,29 @@
+{
+  "note": "REAL USDJPY closes (user's Notion DB), close-only bars, NOT the GBPJPY target backtest",
+  "bars_weekday": 98,
+  "first": "2026-03-09",
+  "last": "2026-07-22",
+  "params": {
+    "entry_lookback": 10,
+    "trend_ema": 20,
+    "atr_period": 14,
+    "stop_atr_mult": 2.0,
+    "trail_atr_mult": 3.0,
+    "risk_per_trade": 0.03,
+    "spread_jpy": 0.01,
+    "allow_short": true
+  },
+  "metrics": {
+    "days": 97,
+    "total_return": -0.0593,
+    "cagr": -0.1468,
+    "sharpe_annualized": -1.066,
+    "sortino_annualized": -1.356,
+    "max_drawdown": 0.1078,
+    "num_trades": 7,
+    "win_rate": 0.143,
+    "avg_r_multiple": -0.263,
+    "best_r": 2.997,
+    "worst_r": -1.015
+  }
+}

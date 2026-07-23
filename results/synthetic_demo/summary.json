@@ -1,0 +1,30 @@
+{
+  "data_file": "data/SYNTHETIC_demo_gbpjpy.csv",
+  "bars": 211,
+  "first_date": "2025-10-01",
+  "last_date": "2026-07-22",
+  "eval_start": "2026-01-01",
+  "params": {
+    "entry_lookback": 20,
+    "trend_ema": 50,
+    "atr_period": 14,
+    "stop_atr_mult": 2.0,
+    "trail_atr_mult": 3.0,
+    "risk_per_trade": 0.03,
+    "spread_jpy": 0.03,
+    "allow_short": true
+  },
+  "metrics": {
+    "days": 145,
+    "total_return": 0.0866,
+    "cagr": 0.1553,
+    "sharpe_annualized": 1.033,
+    "sortino_annualized": 1.601,
+    "max_drawdown": 0.0875,
+    "num_trades": 6,
+    "win_rate": 0.5,
+    "avg_r_multiple": 0.493,
+    "best_r": 2.164,
+    "worst_r": -1.009
+  }
+}
