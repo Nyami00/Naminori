@@ -143,6 +143,12 @@ DEFAULT_PARAMS = {
     "swing_target": "2r",   # swing: "2r" (two risk units) or "boundary" (opposite line)
     "swing_gate_ema": None, # swing: optional EMA period; longs need close above it
                             # (shorts below) - e.g. 200 for a long-term trend gate
+    "max_hold_days": None,  # optional time stop: exit at close after N bars in
+                            # a trade ("dame nara tsugi" - re-set and wait again)
+    "swing_reject_atr": 0.0,   # spring quality: close must be beyond the line
+                               # by this many ATRs (strength of the rejection)
+    "swing_max_wick_atr": None,  # spring quality: max undershoot beyond the
+                                 # line in ATRs (shallow probe vs real breakdown)
     "risk_per_trade": 0.03, # fraction of current equity risked per trade
     "spread_jpy": 0.03,     # round-trip cost in JPY per unit of GBP (3 pips)
     "allow_short": True,
@@ -257,16 +263,27 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
             # K-day extreme that closes back inside the range (spring /
             # upthrust - the systematic form of the double-bottom / double-top
             # rejection at a horizontal line)
+            rej = p["swing_reject_atr"] * a[i]
+            maxw = (p["swing_max_wick_atr"] * a[i]
+                    if p["swing_max_wick_atr"] is not None else None)
             long_sig = (rng_lo[i] is not None and b["low"] < rng_lo[i]
-                        and b["close"] > rng_lo[i]
+                        and b["close"] > rng_lo[i] + rej
+                        and (maxw is None or rng_lo[i] - b["low"] <= maxw)
                         and (gate is None or b["close"] > gate[i]))
             short_sig = (p["allow_short"] and rng_hi[i] is not None
-                         and b["high"] > rng_hi[i] and b["close"] < rng_hi[i]
+                         and b["high"] > rng_hi[i] and b["close"] < rng_hi[i] - rej
+                         and (maxw is None or b["high"] - rng_hi[i] <= maxw)
                          and (gate is None or b["close"] < gate[i]))
         else:
             long_sig = hi_n[i] is not None and b["close"] > hi_n[i] and b["close"] > tr_ema[i]
             short_sig = (p["allow_short"] and lo_n[i] is not None
                          and b["close"] < lo_n[i] and b["close"] < tr_ema[i])
+
+        # time stop: the trade thesis has gone stale - reset and wait again
+        if pos is not None and p.get("max_hold_days"):
+            pos["bars_held"] = pos.get("bars_held", 0) + 1
+            if pos["bars_held"] >= p["max_hold_days"]:
+                close_position(i, b["close"], "time")
 
         # wave-break exits while holding (swing mode exits only via stop/target)
         if pos is not None and p["mode"] != "swing":
@@ -292,10 +309,14 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
                 wick = b["low"] if sig == 1 else b["high"]
                 stop_level = wick - sig * p["swing_wick_atr"] * a[i]
                 stop_dist = abs(b["close"] - stop_level)
-                if p["swing_target"] == "boundary":
-                    target = rng_hi[i] if sig == 1 else rng_lo[i]
-                    if (target - b["close"]) * sig <= 0:
+                if p["swing_target"] in ("boundary", "mid"):
+                    line = rng_hi[i] if sig == 1 else rng_lo[i]
+                    if (line - b["close"]) * sig <= 0:
                         sig = 0  # opposite line already passed; no room to trade
+                    elif p["swing_target"] == "mid":
+                        target = b["close"] + 0.5 * (line - b["close"])
+                    else:
+                        target = line
                 else:
                     target = b["close"] + sig * 2.0 * stop_dist
             elif sig != 0:

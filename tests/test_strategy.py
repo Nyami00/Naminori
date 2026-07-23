@@ -261,6 +261,22 @@ if res_ba_s["trades"] and res_ba_s["trades"][0]["dir"] == "short":
           t["reason"] == "target" and approx(t["exit"], res_ba_s["trades"][0]["exit"], 1e-9)
           and t["exit"] > 98.0, f"exit {t['exit']}")
 
+# ---------------------------------------------------------------------------
+print("backtest: mid target and time stop")
+res_mid = run_backtest(warm_sw + spring + after_sw, dict(p_sw, swing_target="mid"))
+if res_mid["trades"]:
+    t = res_mid["trades"][0]
+    # mid target = entry_close + 0.5*(boundary - entry_close) = 100.2 + 0.5*0.3
+    check("mid target at halfway to the line", approx(t["exit"], 100.35, 1e-4),
+          f"exit {t['exit']}")
+    check("mid target reason", t["reason"] == "target")
+flat_after = [bar(f"2026-07-{d:02d}", 100.2, 100.4, 100.05, 100.2) for d in range(2, 9)]
+res_time = run_backtest(warm_sw + spring + flat_after, dict(p_sw, max_hold_days=3))
+if res_time["trades"]:
+    t = res_time["trades"][0]
+    check("time stop closes after N bars", t["reason"] == "time" and
+          t["exit_date"] == "2026-07-04", f"{t['reason']} {t['exit_date']}")
+
 print()
 if FAILED:
     print(f"{len(FAILED)} TEST(S) FAILED: {FAILED}")
