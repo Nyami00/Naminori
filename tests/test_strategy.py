@@ -179,6 +179,62 @@ i_start = dates_eq.index("2026-05-02")
 check("mtm equity rises during winning hold",
       vals_eq[i_start + 5] > vals_eq[i_start])
 
+# ---------------------------------------------------------------------------
+print("backtest: swing mode (spring entry, boundary target, wick stop)")
+# 30 warm bars: constant range 99.5-100.5, close 100 -> ATR settles at 1.0,
+# prior-20d low line = 99.5, high line = 100.5
+warm_sw = [bar(f"2026-06-{i+1:02d}", 100, 100.5, 99.5, 100) for i in range(30)]
+# spring day: dips below the 99.5 line, closes back above it at 100.2
+spring = [bar("2026-07-01", 100, 100.6, 99.0, 100.2)]
+# TR on spring day = max(1.6, 0.6, 1.0) = 1.6 -> ATR = (13*1 + 1.6)/14
+atr_spring = (13.0 * 1.0 + 1.6) / 14.0
+stop_expected = 99.0 - 0.5 * atr_spring          # wick low - 0.5*ATR
+dist_expected = 100.2 - stop_expected
+p_sw = {"mode": "swing", "entry_lookback": 20, "swing_target": "boundary",
+        "swing_wick_atr": 0.5, "trend_ema": 20, "atr_period": 14,
+        "risk_per_trade": 0.03, "spread_jpy": 0.0, "allow_short": False}
+
+# target reached two days later
+after_sw = [bar("2026-07-02", 100.2, 100.4, 100.0, 100.3),
+            bar("2026-07-03", 100.3, 100.7, 100.1, 100.4)]
+res_sw = run_backtest(warm_sw + spring + after_sw, p_sw)
+check("spring produced one long trade", len(res_sw["trades"]) == 1 and
+      res_sw["trades"][0]["dir"] == "long")
+if res_sw["trades"]:
+    t = res_sw["trades"][0]
+    check("swing entry at spring close", approx(t["entry"], 100.2, 1e-9))
+    check("swing target exit at the 20d-high line",
+          t["reason"] == "target" and approx(t["exit"], 100.5, 1e-4))
+    check("swing sizing = 3% / wick-stop distance",
+          approx(t["units"], 30_000.0 / dist_expected, 0.01),
+          f"units {t['units']} vs {30_000.0/dist_expected}")
+
+# same-day stop AND target touched -> pessimistic stop exit at the stop level
+violent = [bar("2026-07-02", 100.2, 101.0, 98.0, 99.0)]
+res_sw2 = run_backtest(warm_sw + spring + violent, p_sw)
+check("same-day stop+target resolves to stop", len(res_sw2["trades"]) == 1 and
+      res_sw2["trades"][0]["reason"] == "stop")
+if res_sw2["trades"]:
+    check("swing stop fill at wick-stop level",
+          approx(res_sw2["trades"][0]["exit"], stop_expected, 1e-4),
+          f"exit {res_sw2['trades'][0]['exit']} vs {stop_expected}")
+
+# gap-down open below the stop -> fills at the (worse) real open
+gap_sw = [bar("2026-07-02", 98.0, 98.5, 97.5, 98.2)]
+res_sw3 = run_backtest(warm_sw + spring + gap_sw, p_sw)
+if res_sw3["trades"]:
+    check("swing gap through stop fills at real open",
+          approx(res_sw3["trades"][0]["exit"], 98.0, 1e-4),
+          f"exit {res_sw3['trades'][0]['exit']}")
+
+# upthrust day must NOT enter when shorts are disabled
+upthrust = [bar("2026-07-01", 100, 101.0, 99.6, 99.8)]
+res_sw4 = run_backtest(warm_sw + upthrust, p_sw)
+check("no short entry when allow_short=False", len(res_sw4["trades"]) == 0)
+res_sw5 = run_backtest(warm_sw + upthrust, dict(p_sw, allow_short=True))
+check("upthrust enters short when allowed", len(res_sw5["trades"]) == 1 and
+      res_sw5["trades"][0]["dir"] == "short")
+
 print()
 if FAILED:
     print(f"{len(FAILED)} TEST(S) FAILED: {FAILED}")

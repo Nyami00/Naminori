@@ -13,9 +13,9 @@ from a fixed fraction of account equity at risk per trade.
 Everything is pure standard-library Python (no third-party packages are
 installable in this environment).
 
-Data model: daily bars with high/low/close. The open is approximated by the
-previous close (FX trades continuously except weekends); this approximation
-is only used for gap handling on stop fills and is documented in the README.
+Data model: daily bars with open/high/low/close. The open is used for gap
+handling on stop fills: a day that opens beyond the stop fills at the open,
+i.e. worse than the stop level.
 
 Execution model (no look-ahead):
   - Signals are computed on data up to and including day t's close and are
@@ -185,7 +185,7 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
             eq_curve.append((date, equity))
             continue
 
-        open_proxy = bars[i - 1]["close"]
+        open_proxy = b["open"]  # real open; gaps through a stop fill at the open
 
         # --- 1) manage open position intraday (stop computed from data <= i-1)
         if pos is not None:
