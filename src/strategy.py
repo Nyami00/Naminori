@@ -131,7 +131,10 @@ def rolling_min(values, period):
 
 DEFAULT_PARAMS = {
     "mode": "breakout",     # "breakout" (new-wave Donchian), "pullback" (dip-buy in
-                            # trend), or "swing" (failed-break rejection at range edges)
+                            # trend), "swing" (failed-break rejection at range edges),
+                            # "swing_daily" (H1 rejection at the PREVIOUS DAY's
+                            # high/low lines), or "ema_bounce" (touch-and-hold of
+                            # the trend EMA - the blog's "200EMA touch" play)
     "entry_lookback": 20,   # breakout: close above prior N-day close high;
                             # swing: range lookback for the support/resistance lines
     "pb_ema": 20,           # pullback: the dynamic support/resistance line being touched
@@ -149,6 +152,8 @@ DEFAULT_PARAMS = {
                                # by this many ATRs (strength of the rejection)
     "swing_max_wick_atr": None,  # spring quality: max undershoot beyond the
                                  # line in ATRs (shallow probe vs real breakdown)
+    "gate_rising_bars": None,  # ema_bounce: require the trend EMA to be rising
+                               # over this many bars (slope gate)
     "risk_per_trade": 0.03, # fraction of current equity risked per trade
     "spread_jpy": 0.03,     # round-trip cost in JPY per unit of GBP (3 pips)
     "allow_short": True,
@@ -183,6 +188,21 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
     rng_hi = rolling_max(highs, p["entry_lookback"])   # swing: resistance line
     rng_lo = rolling_min(lows, p["entry_lookback"])    # swing: support line
     gate = ema(closes, p["swing_gate_ema"]) if p.get("swing_gate_ema") else None
+
+    if p["mode"] == "swing_daily":
+        # previous calendar day's high/low, per bar (works on intraday bars)
+        pd_hi, pd_lo = [None] * len(bars), [None] * len(bars)
+        day_hi, day_lo, cur_day, prev_hi, prev_lo = None, None, None, None, None
+        for i, b in enumerate(bars):
+            d = b["date"][:10]
+            if d != cur_day:
+                if cur_day is not None:
+                    prev_hi, prev_lo = day_hi, day_lo
+                cur_day, day_hi, day_lo = d, b["high"], b["low"]
+            else:
+                day_hi = max(day_hi, b["high"])
+                day_lo = min(day_lo, b["low"])
+            pd_hi[i], pd_lo[i] = prev_hi, prev_lo
 
     equity = start_equity
     pos = None  # dict(dir, units, entry, stop, best_close, entry_date, risk_amt)
@@ -274,6 +294,33 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
                          and b["high"] > rng_hi[i] and b["close"] < rng_hi[i] - rej
                          and (maxw is None or b["high"] - rng_hi[i] <= maxw)
                          and (gate is None or b["close"] < gate[i]))
+        elif p["mode"] == "swing_daily":
+            # rejection of the PREVIOUS DAY's low/high line on intraday bars
+            rej = p["swing_reject_atr"] * a[i]
+            maxw = (p["swing_max_wick_atr"] * a[i]
+                    if p["swing_max_wick_atr"] is not None else None)
+            long_sig = (pd_lo[i] is not None and b["low"] < pd_lo[i]
+                        and b["close"] > pd_lo[i] + rej
+                        and (maxw is None or pd_lo[i] - b["low"] <= maxw)
+                        and (gate is None or b["close"] > gate[i]))
+            short_sig = (p["allow_short"] and pd_hi[i] is not None
+                         and b["high"] > pd_hi[i] and b["close"] < pd_hi[i] - rej
+                         and (maxw is None or b["high"] - pd_hi[i] <= maxw)
+                         and (gate is None or b["close"] < gate[i]))
+        elif p["mode"] == "ema_bounce":
+            # touch-and-hold of the trend EMA (the blog's "200EMA touch is a
+            # high-probability bounce point"); optional rising-slope gate
+            rej = p["swing_reject_atr"] * a[i]
+            rising = (p["gate_rising_bars"] is None
+                      or (i >= p["gate_rising_bars"]
+                          and tr_ema[i] > tr_ema[i - p["gate_rising_bars"]]))
+            falling = (p["gate_rising_bars"] is None
+                       or (i >= p["gate_rising_bars"]
+                           and tr_ema[i] < tr_ema[i - p["gate_rising_bars"]]))
+            long_sig = (b["low"] <= tr_ema[i] and b["close"] > tr_ema[i] + rej
+                        and rising)
+            short_sig = (p["allow_short"] and b["high"] >= tr_ema[i]
+                         and b["close"] < tr_ema[i] - rej and falling)
         else:
             long_sig = hi_n[i] is not None and b["close"] > hi_n[i] and b["close"] > tr_ema[i]
             short_sig = (p["allow_short"] and lo_n[i] is not None
@@ -285,8 +332,9 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
             if pos["bars_held"] >= p["max_hold_days"]:
                 close_position(i, b["close"], "time")
 
-        # wave-break exits while holding (swing mode exits only via stop/target)
-        if pos is not None and p["mode"] != "swing":
+        # wave-break exits while holding (line/bounce modes exit only via
+        # stop/target/time)
+        if pos is not None and p["mode"] not in ("swing", "swing_daily", "ema_bounce"):
             if p["mode"] == "pullback":
                 # the wave is broken when price closes through the trend EMA
                 if pos["dir"] == 1 and b["close"] < tr_ema[i]:
@@ -304,19 +352,32 @@ def run_backtest(bars, params=None, start_equity=1_000_000.0, start_date=None):
         if pos is None and (start_date is None or date >= start_date):
             sig = 1 if long_sig else (-1 if short_sig else 0)
             target = None
-            if sig != 0 and p["mode"] == "swing":
+            if sig != 0 and p["mode"] in ("swing", "swing_daily", "ema_bounce"):
                 # stop just beyond the rejection wick; target from structure
                 wick = b["low"] if sig == 1 else b["high"]
                 stop_level = wick - sig * p["swing_wick_atr"] * a[i]
                 stop_dist = abs(b["close"] - stop_level)
                 if p["swing_target"] in ("boundary", "mid"):
-                    line = rng_hi[i] if sig == 1 else rng_lo[i]
-                    if (line - b["close"]) * sig <= 0:
+                    if p["mode"] == "swing_daily":
+                        line = pd_hi[i] if sig == 1 else pd_lo[i]
+                    else:
+                        line = rng_hi[i] if sig == 1 else rng_lo[i]
+                    if line is None or (line - b["close"]) * sig <= 0:
                         sig = 0  # opposite line already passed; no room to trade
                     elif p["swing_target"] == "mid":
                         target = b["close"] + 0.5 * (line - b["close"])
                     else:
                         target = line
+                elif p["swing_target"] == "ema_line":
+                    # the shorter EMA (pb_ema) as the bounce objective - the
+                    # blog's "take profit at the 25EMA"
+                    line = pb[i]
+                    if (line - b["close"]) * sig <= 0.3 * a[i]:
+                        sig = 0  # no meaningful room to the EMA line
+                    else:
+                        target = line
+                elif p["swing_target"] == "1.5r":
+                    target = b["close"] + sig * 1.5 * stop_dist
                 else:
                     target = b["close"] + sig * 2.0 * stop_dist
             elif sig != 0:
