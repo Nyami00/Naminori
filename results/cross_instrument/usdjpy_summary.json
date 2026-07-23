@@ -1,0 +1,33 @@
+{
+  "symbol": "USDJPY",
+  "bars": 3165,
+  "first": "2014-01-01",
+  "last": "2026-07-22",
+  "note": "frozen GBPJPY params applied unchanged",
+  "metrics_full": {
+    "days": 2904,
+    "total_return": 0.0909,
+    "cagr": 0.0076,
+    "sharpe_annualized": 0.132,
+    "sortino_annualized": 0.185,
+    "max_drawdown": 0.2741,
+    "num_trades": 28,
+    "win_rate": 0.393,
+    "avg_r_multiple": 0.138,
+    "best_r": 3.913,
+    "worst_r": -1.162
+  },
+  "metrics_2022on": {
+    "days": 1188,
+    "total_return": 0.0817,
+    "cagr": 0.0168,
+    "sharpe_annualized": 0.282,
+    "sortino_annualized": 0.401,
+    "max_drawdown": 0.196,
+    "num_trades": 12,
+    "win_rate": 0.417,
+    "avg_r_multiple": 0.225,
+    "best_r": 2.782,
+    "worst_r": -1.162
+  }
+}

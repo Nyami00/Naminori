@@ -1,0 +1,96 @@
+{
+  "note": "equal-weight portfolio of the frozen strategy across GBPJPY/EURJPY/USDJPY; zero new parameters",
+  "total_trades": 92,
+  "full_2015_2026": {
+    "sharpe": 0.28,
+    "return": 0.1721,
+    "max_dd": 0.1021,
+    "days": 3013
+  },
+  "from_2022": {
+    "sharpe": 0.91,
+    "return": 0.2395,
+    "max_dd": 0.0873,
+    "days": 1188
+  },
+  "until_2021": {
+    "sharpe": -0.12,
+    "return": -0.0544,
+    "max_dd": 0.1021,
+    "days": 1825
+  },
+  "per_year": {
+    "2015": {
+      "sharpe": -0.54,
+      "return": -0.028,
+      "max_dd": 0.0414,
+      "days": 261
+    },
+    "2016": {
+      "sharpe": -0.98,
+      "return": -0.0026,
+      "max_dd": 0.0026,
+      "days": 260
+    },
+    "2017": {
+      "sharpe": 0.53,
+      "return": 0.0404,
+      "max_dd": 0.0606,
+      "days": 260
+    },
+    "2018": {
+      "sharpe": -1.12,
+      "return": -0.0657,
+      "max_dd": 0.0675,
+      "days": 261
+    },
+    "2019": {
+      "sharpe": 0.0,
+      "return": 0.0,
+      "max_dd": 0.0,
+      "days": 261
+    },
+    "2020": {
+      "sharpe": -0.23,
+      "return": -0.013,
+      "max_dd": 0.0643,
+      "days": 262
+    },
+    "2021": {
+      "sharpe": 0.27,
+      "return": 0.0167,
+      "max_dd": 0.0649,
+      "days": 260
+    },
+    "2022": {
+      "sharpe": 1.15,
+      "return": 0.0699,
+      "max_dd": 0.0407,
+      "days": 260
+    },
+    "2023": {
+      "sharpe": -0.19,
+      "return": -0.0088,
+      "max_dd": 0.0566,
+      "days": 260
+    },
+    "2024": {
+      "sharpe": 0.21,
+      "return": 0.009,
+      "max_dd": 0.0685,
+      "days": 262
+    },
+    "2025": {
+      "sharpe": 0.62,
+      "return": 0.0137,
+      "max_dd": 0.0206,
+      "days": 261
+    },
+    "2026": {
+      "sharpe": 2.68,
+      "return": 0.1426,
+      "max_dd": 0.0265,
+      "days": 145
+    }
+  }
+}
