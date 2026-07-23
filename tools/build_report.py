@@ -40,7 +40,8 @@ def jload(path):
         return json.load(f)
 
 
-bars = [r for r in load_csv("data/gbpjpy_daily_2026.csv") if r["date"] >= EVAL_START]
+bars_all = load_csv("data/gbpjpy_daily_ext.csv")
+bars = [r for r in bars_all if r["date"] >= EVAL_START]
 equity = [r for r in load_csv("results/gbpjpy_final/equity.csv") if r["date"] >= EVAL_START]
 trades = load_csv("results/gbpjpy_final/trades.csv")
 summary = jload("results/gbpjpy_final/summary.json")
@@ -215,6 +216,53 @@ for k, (lab, tr_v, te_v) in enumerate(variants):
 chart_var = (f'<div class="chart-wrap"><svg viewBox="0 0 {VW} {VH}" class="chart" role="img">'
              f'{"".join(v_svg)}</svg></div>')
 
+# ---- chart 5: price with EMA 25/75/200 overlay ------------------------------
+def ema_series(vals, period):
+    out, k, prev = [], 2.0 / (period + 1.0), None
+    for v in vals:
+        prev = v if prev is None else v * k + prev * (1.0 - k)
+        out.append(prev)
+    return out
+
+
+closes_all = [float(r["close"]) for r in bars_all]
+off = len(bars_all) - len(bars)
+e25 = ema_series(closes_all, 25)[off:]
+e75 = ema_series(closes_all, 75)[off:]
+e200 = ema_series(closes_all, 200)[off:]
+alo = min(min(closes), min(e200)) - 1.2
+ahi = max(closes) + 1.2
+
+
+def poly(vals, lo, hi, nn):
+    return " ".join(f"{xscale(i,nn):.1f},{yscale(v,lo,hi):.1f}" for i, v in enumerate(vals))
+
+
+ema_lines = (
+    f'<polyline points="{poly(e25,alo,ahi,n)}" fill="none" stroke="{TEAL}" stroke-width="1.6"/>'
+    f'<polyline points="{poly(e75,alo,ahi,n)}" fill="none" stroke="{AMBER}" stroke-width="1.6"/>'
+    f'<polyline points="{poly(e200,alo,ahi,n)}" fill="none" stroke="{INK_SOFT}" '
+    f'stroke-width="1.6" stroke-dasharray="7 4"/>')
+ema_labels = "".join(
+    f'<text x="{W-PAD_R-2}" y="{yscale(v[-1],alo,ahi)+dy:.1f}" text-anchor="end" '
+    f'class="ema-lab" fill="{c}">{lab}</text>'
+    for v, c, lab, dy in ((e25, TEAL, "EMA25", -8), (e75, AMBER, "EMA75", 14),
+                          (e200, INK_SOFT, "EMA200", 14)))
+ema_marks = []
+for t in trades:
+    i0 = di[t["entry_date"]]
+    x0 = xscale(i0, n)
+    ye = yscale(float(t["entry"]), alo, ahi)
+    ema_marks.append(
+        f'<path d="M {x0:.1f} {ye+6:.1f} l 5 9 l -10 0 z" fill="{TEAL_D}" '
+        f'transform="rotate(180 {x0:.1f} {ye+6:.1f})">'
+        f'<title>{t["entry_date"]} エントリー {t["entry"]}</title></path>')
+chart_ema = line_chart(dates, closes, INK, alo, ahi, 2, lambda v: f"{v:.0f}",
+                       "chart-ema", ema_lines + "".join(ema_marks) + ema_labels)
+
+# ---- blog-sourced note for the EMA section (updated after archive reading) ---
+EMA_BLOG_NOTE = ("氏がEMA25・75・200も使用しているとの情報（ユーザー提供・FC2ブログ）を受けた追補検証です。")
+
 # ---- trade table rows --------------------------------------------------------
 tr_rows = "".join(
     f'<tr><td>{t["entry_date"]} → {t["exit_date"]}</td><td>買い</td>'
@@ -270,6 +318,7 @@ border-radius:8px;padding:10px 14px;}}
 .tick{{font-size:11px;fill:var(--ink-soft);}}
 .mark-label{{font-size:12px;font-weight:700;fill:var(--teal-d);}}
 .ci-lab{{font-size:12.5px;fill:var(--ink);}}
+.ema-lab{{font-size:11.5px;font-weight:700;}}
 .ci-p{{font-size:12.5px;font-weight:700;fill:var(--teal-d);}}
 .bar-val{{font-size:12px;font-weight:700;fill:var(--ink);}}
 .note{{font-size:12.5px;color:var(--ink-soft);margin-top:6px;}}
@@ -351,14 +400,36 @@ section{{box-shadow:none;break-inside:avoid;}}
 </section>
 
 <section>
-<div class="sec-head"><span class="sec-num">04</span><h2>代替案との比較（探索過程の全開示）</h2></div>
+<div class="sec-head"><span class="sec-num">04</span><h2>EMA 25/75/200 レビュー（追補検証）</h2></div>
+<p>{EMA_BLOG_NOTE}データを2024年9月まで延長（488営業日）してEMA200の適正なウォームアップを確保し、実データで検証しました。</p>
+{chart_ema}
+<div class="note">黒＝終値、緑＝EMA25、琥珀＝EMA75、破線＝EMA200、▲＝採用戦略のエントリー。検証期間の全144営業日で「終値&gt;EMA200」かつパーフェクトオーダー（EMA25&gt;75&gt;200）が成立した、教科書的なEMA順行相場でした。</div>
+<h3>診断結果</h3>
+<ul>
+<li>採用戦略の3エントリーは全て <b>EMA25の下（−0.3〜−1.6ATR）・EMA75近傍（6/18はほぼ接地）・EMA200の大幅上方</b>で発生。水平線（20日安値のダマシ下抜け）で検出していたエントリーは、実質的に「EMA200上でのEMA25〜75ゾーンへの押し目買い」でした。</li>
+<li>EMA75は支持線として機能：2026年のタッチ26回中16回が上で引け、その後10営業日の平均リターンは+0.95%。</li>
+</ul>
+<h3>EMAを組み込んだ変種の成績（ウォークフォワード規律は本編と同一）</h3>
+<div class="table-wrap"><table>
+<tr><th>変種</th><th>訓練窓</th><th>テスト窓</th><th>通期</th><th>判断</th></tr>
+<tr><td>採用構成（凍結）</td><td class="num">+3.48</td><td class="num">+2.72</td><td class="num">+3.17</td><td>基準</td></tr>
+<tr><td>＋EMA200ロングゲート</td><td class="num">+3.48</td><td class="num">+2.72</td><td class="num">+3.17</td><td class="pos">採用（トレード完全一致）</td></tr>
+<tr><td>＋EMA75ロングゲート</td><td class="num">+3.23</td><td class="num">+2.39</td><td class="num">+2.81</td><td>棄却（2/17の最良トレードを遮断）</td></tr>
+<tr><td>EMA25押し目買い（EMA75上）</td><td class="num">−1.22</td><td class="num">+0.96</td><td class="num">−0.39</td><td>棄却（タッチ頻発で選択性なし）</td></tr>
+<tr><td>EMA75押し目買い（EMA200上）</td><td class="num">+1.09</td><td class="num">+1.86</td><td class="num">+1.46</td><td>参考（機能するが採用構成に劣後）</td></tr>
+</table></div>
+<p class="note">結論：EMA層は採用戦略を「改善」するのではなく「裏付け」ます。EMA200ゲート（買いは終値&gt;EMA200のときのみ）は2026年の結果を一切変えずにレジーム転換時の自動停止を与えるため、凍結パラメータに正式採用しました。EMAタッチ自体をエントリーにすると劣化することから、「ダマシ下抜けの確認」という条件が選択性の源泉であることも確認されました。</p>
+</section>
+
+<section>
+<div class="sec-head"><span class="sec-num">05</span><h2>代替案との比較（探索過程の全開示）</h2></div>
 <p>約35構成を評価しました。選択はすべて訓練窓（1〜4月）の成績で行い、テスト窓（5〜7月）は選択後の確認のみに使用しています。ブレイクアウト追随型は全8構成がマイナスで棄却。両方向のスイング反発は訓練窓こそ良好でしたが、テスト窓で売りトレードが上昇トレンドに全敗しました。</p>
 {chart_var}
 <div class="note">数値は年率シャープレシオ。採用構成の近傍18構成（期間14/20/26日×ターゲット2種×バッファ3種）は全て通期プラス（最低+1.44）で、特定パラメータへの過剰適合ではないことを確認済みです。</div>
 </section>
 
 <section>
-<div class="sec-head"><span class="sec-num">05</span><h2>統計的検証（モンテカルロ・有意性）</h2></div>
+<div class="sec-head"><span class="sec-num">06</span><h2>統計的検証（モンテカルロ・有意性）</h2></div>
 <p>日次リターンのブロック・ブートストラップ（1万回）によるシャープレシオの分布です。保有が数週間に及ぶためブロック長を変えて確認したところ、長いブロックほど区間が狭まり、採用した5日ブロックが最も保守的な評価でした。</p>
 {chart_ci}
 <div class="table-wrap"><table>
@@ -373,7 +444,7 @@ section{{box-shadow:none;break-inside:avoid;}}
 </section>
 
 <section>
-<div class="sec-head"><span class="sec-num">06</span><h2>データ品質</h2></div>
+<div class="sec-head"><span class="sec-num">07</span><h2>データ品質</h2></div>
 <ul>
 <li>stooq.comのヒストリカルデータ209営業日（2025-10-01〜2026-07-22。欠損は12/25と1/1の休場2日のみ）。</li>
 <li>別経路（exchange-rates.org系・wise.com）で事前収集した実測アンカー22点との包含関係チェックに合格（例：2/17安値207.24は参照値207.79の下方＝日中実レンジとして整合、7/15高値219.65 vs 参照219.50）。</li>
@@ -382,7 +453,7 @@ section{{box-shadow:none;break-inside:avoid;}}
 </section>
 
 <section class="caution">
-<div class="sec-head"><span class="sec-num">07</span><h2>限定事項（正直な注意書き）</h2></div>
+<div class="sec-head"><span class="sec-num">08</span><h2>限定事項（正直な注意書き）</h2></div>
 <ul>
 <li><b>標本の小ささ：</b>トレード3件・観測7ヶ月。トレード単位の統計検定は構造的に検出力がありません。点推定の再現性と選択調整後p値が主な根拠です。</li>
 <li><b>単一レジーム：</b>全トレードが2026年の円安上昇構造で成立。「ロングのみ」の構成もこのレジームへの適合であり、円高転換時には再評価が必要です。</li>
@@ -392,7 +463,7 @@ section{{box-shadow:none;break-inside:avoid;}}
 </section>
 
 <section>
-<div class="sec-head"><span class="sec-num">08</span><h2>次の一手</h2></div>
+<div class="sec-head"><span class="sec-num">09</span><h2>次の一手</h2></div>
 <ul>
 <li>デモ口座でのフォワード検証（セットアップは月1〜2回程度の頻度。15〜20トレードの蓄積目安は約1年）。</li>
 <li>月次でのレジーム点検：安値切り上げ構造が崩れた場合（円高転換）は運用停止し再評価。</li>
