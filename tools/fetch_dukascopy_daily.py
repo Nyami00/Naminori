@@ -32,7 +32,20 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_URL = "https://datafeed.dukascopy.com/datafeed"
-SCALE = 1000.0   # set per symbol in main(): JPY quote = 1e3, else 1e5
+SCALE = 1000.0   # set per symbol in main() by scale_for()
+
+# Dukascopy point value per instrument family (verified against known 2020
+# price ranges: gold 1471-2069, SPX 2203-3743, WTI 12-65, copper 2.07-3.64).
+SCALE_OVERRIDES = {"COPPERCMDUSD": 10000.0}
+
+
+def scale_for(symbol):
+    s = symbol.upper()
+    if s in SCALE_OVERRIDES:
+        return SCALE_OVERRIDES[s]
+    if any(k in s for k in ("IDX", "CMD", "XAU", "XAG", "XPT", "XPD")):
+        return 1000.0            # CFDs on indices, commodities and metals
+    return 1000.0 if s.endswith("JPY") else 100000.0
 REC = struct.Struct(">iiiiif")
 
 
@@ -130,7 +143,7 @@ def main():
     to_date = dt.date.fromisoformat(args.to_date)
     global BASE, SCALE
     BASE = f"{BASE_URL}/{args.symbol}"
-    SCALE = 1000.0 if args.symbol.upper().endswith("JPY") else 100000.0
+    SCALE = scale_for(args.symbol)
     if args.out is None:
         args.out = os.path.join(ROOT, "data", f"{args.symbol.lower()}_dukascopy_daily.csv")
 
@@ -152,7 +165,7 @@ def main():
             if bh == bl:               # zero-range holiday placeholder
                 continue
             w.writerow([d, bo, bh, bl, bc, ao, ah, al, ac,
-                        round(ac - bc, 4), round(bv, 2)])
+                        round(ac - bc, 6), round(bv, 2)])
             n_kept += 1
     print(f"wrote {n_kept} weekday bars to {args.out} (scale {SCALE:g})")
 

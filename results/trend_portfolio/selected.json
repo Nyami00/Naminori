@@ -1,0 +1,94 @@
+{
+  "universe": [
+    "AUDJPY",
+    "AUDUSD",
+    "EURGBP",
+    "EURJPY",
+    "EURUSD",
+    "GBPJPY",
+    "GBPUSD",
+    "NZDUSD",
+    "USDCAD",
+    "USDCHF",
+    "USDJPY"
+  ],
+  "selected": {
+    "lookbacks": "250",
+    "rebalance": "weekly",
+    "vol_window": 60,
+    "train_sharpe": 0.013,
+    "train_cagr": -0.0008,
+    "train_dd": 0.1355,
+    "test_sharpe": 0.528,
+    "test_cagr": 0.0253,
+    "test_dd": 0.0909,
+    "full_sharpe": 0.202,
+    "full_cagr": 0.0094,
+    "full_dd": 0.1355,
+    "full_vol": 0.0534,
+    "cost_drag": 0.0006
+  },
+  "config": {
+    "target_vol": 0.1,
+    "max_leverage": 3.0,
+    "cost_multiplier": 1.0,
+    "lookbacks": [
+      250
+    ],
+    "rebalance": "weekly",
+    "vol_window": 60
+  },
+  "metrics_target10pct_vol": {
+    "full": {
+      "days": 3012,
+      "cagr": 0.0094,
+      "total_return": 0.1183,
+      "ann_vol": 0.0534,
+      "sharpe": 0.202,
+      "sortino": 0.285,
+      "max_drawdown": 0.1355,
+      "calmar": 0.07,
+      "avg_gross_leverage": 1.28,
+      "cost_drag_annual": 0.0006
+    },
+    "test": {
+      "days": 1188,
+      "cagr": 0.0253,
+      "total_return": 0.1248,
+      "ann_vol": 0.0496,
+      "sharpe": 0.528,
+      "sortino": 0.745,
+      "max_drawdown": 0.0909,
+      "calmar": 0.28,
+      "avg_gross_leverage": 1.32,
+      "cost_drag_annual": 0.0006
+    }
+  },
+  "scaled_to_goal": {
+    "target_vol": 1.0638,
+    "full": {
+      "days": 3012,
+      "cagr": -0.0457,
+      "total_return": -0.4284,
+      "ann_vol": 0.5676,
+      "sharpe": 0.202,
+      "sortino": 0.285,
+      "max_drawdown": 0.8792,
+      "calmar": -0.05,
+      "avg_gross_leverage": 13.64,
+      "cost_drag_annual": 0.0062
+    },
+    "test": {
+      "days": 1188,
+      "cagr": 0.1484,
+      "total_return": 0.92,
+      "ann_vol": 0.5278,
+      "sharpe": 0.528,
+      "sortino": 0.745,
+      "max_drawdown": 0.6959,
+      "calmar": 0.21,
+      "avg_gross_leverage": 14.06,
+      "cost_drag_annual": 0.0064
+    }
+  }
+}
