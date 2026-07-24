@@ -1,0 +1,67 @@
+{
+  "config": {
+    "sma": 250,
+    "basket": "equity_gold",
+    "sizing": "equal"
+  },
+  "symbols": [
+    "USA500IDXUSD",
+    "USATECHIDXUSD",
+    "DEUIDXEUR",
+    "JPNIDXJPY",
+    "GBRIDXGBP",
+    "XAUUSD"
+  ],
+  "selected_row": {
+    "sma": 250,
+    "basket": "equity_gold",
+    "sizing": "equal",
+    "train_sharpe": 0.48,
+    "train_cagr": 0.0429,
+    "train_dd": 0.1744,
+    "test_sharpe": 1.066,
+    "test_cagr": 0.1113,
+    "test_dd": 0.112,
+    "full_sharpe": 0.721,
+    "full_cagr": 0.0693,
+    "full_dd": 0.1744,
+    "full_vol": 0.1,
+    "full_calmar": 0.4
+  },
+  "metrics": {
+    "full": {
+      "cagr": 0.0693,
+      "ann_vol": 0.1,
+      "sharpe": 0.721,
+      "max_drawdown": 0.1744,
+      "calmar": 0.4,
+      "total_return": 1.2222
+    },
+    "test": {
+      "cagr": 0.1113,
+      "ann_vol": 0.1041,
+      "sharpe": 1.066,
+      "max_drawdown": 0.112,
+      "calmar": 0.99,
+      "total_return": 0.6419
+    }
+  },
+  "avg_invested": 0.7474,
+  "benchmark_buyhold_equity": {
+    "cagr": 0.1103,
+    "ann_vol": 0.1677,
+    "sharpe": 0.708,
+    "max_drawdown": 0.3155,
+    "calmar": 0.35,
+    "total_return": 2.4747
+  },
+  "benchmark_buyhold_equity_gold": {
+    "cagr": 0.1142,
+    "ann_vol": 0.1433,
+    "sharpe": 0.827,
+    "max_drawdown": 0.277,
+    "calmar": 0.41,
+    "total_return": 2.6251
+  },
+  "notes": "price indices (no dividends), cash sleeves earn 0%, no financing charged - correct for cash-funded ETFs"
+}

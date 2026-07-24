@@ -1,0 +1,26 @@
+{
+  "USA500IDXUSD": {
+    "cagr": 0.1151,
+    "ann_vol": 0.1718,
+    "sharpe": 0.72,
+    "max_drawdown": 0.3323
+  },
+  "USATECHIDXUSD": {
+    "cagr": 0.176,
+    "ann_vol": 0.2159,
+    "sharpe": 0.86,
+    "max_drawdown": 0.3562
+  },
+  "XAUUSD": {
+    "cagr": 0.1106,
+    "ann_vol": 0.1573,
+    "sharpe": 0.75,
+    "max_drawdown": 0.277
+  },
+  "JPNIDXJPY": {
+    "cagr": 0.1196,
+    "ann_vol": 0.2098,
+    "sharpe": 0.64,
+    "max_drawdown": 0.3182
+  }
+}

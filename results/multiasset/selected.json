@@ -1,0 +1,118 @@
+{
+  "universe": [
+    "AUDJPY",
+    "AUDUSD",
+    "BRENTCMDUSD",
+    "COPPERCMDUSD",
+    "DEUIDXEUR",
+    "EURGBP",
+    "EURJPY",
+    "EURUSD",
+    "GBPJPY",
+    "GBPUSD",
+    "GBRIDXGBP",
+    "JPNIDXJPY",
+    "LIGHTCMDUSD",
+    "NZDUSD",
+    "USA30IDXUSD",
+    "USA500IDXUSD",
+    "USATECHIDXUSD",
+    "USDCAD",
+    "USDCHF",
+    "USDJPY",
+    "XAGUSD",
+    "XAUUSD"
+  ],
+  "selected_row": {
+    "lookbacks": "250",
+    "rebalance": "weekly",
+    "vol_window": 60,
+    "train_sharpe": 0.137,
+    "train_cagr": 0.0052,
+    "train_dd": 0.107,
+    "test_sharpe": 0.923,
+    "test_cagr": 0.0371,
+    "test_dd": 0.067,
+    "full_sharpe": 0.423,
+    "full_cagr": 0.0177,
+    "full_dd": 0.107,
+    "full_vol": 0.0437,
+    "cost_drag": 0.001
+  },
+  "config": {
+    "target_vol": 0.1,
+    "max_leverage": 3.0,
+    "cost_multiplier": 1.0,
+    "lookbacks": [
+      250
+    ],
+    "rebalance": "weekly",
+    "vol_window": 60
+  },
+  "metrics_base": {
+    "train": {
+      "days": 1824,
+      "cagr": 0.0052,
+      "total_return": 0.0385,
+      "ann_vol": 0.0457,
+      "sharpe": 0.137,
+      "sortino": 0.187,
+      "max_drawdown": 0.107,
+      "calmar": 0.05,
+      "avg_gross_leverage": 0.94,
+      "cost_drag_annual": 0.001
+    },
+    "test": {
+      "days": 1188,
+      "cagr": 0.0371,
+      "total_return": 0.1871,
+      "ann_vol": 0.0403,
+      "sharpe": 0.923,
+      "sortino": 1.305,
+      "max_drawdown": 0.067,
+      "calmar": 0.55,
+      "avg_gross_leverage": 0.94,
+      "cost_drag_annual": 0.0008
+    },
+    "full": {
+      "days": 3012,
+      "cagr": 0.0177,
+      "total_return": 0.2329,
+      "ann_vol": 0.0437,
+      "sharpe": 0.423,
+      "sortino": 0.583,
+      "max_drawdown": 0.107,
+      "calmar": 0.17,
+      "avg_gross_leverage": 0.94,
+      "cost_drag_annual": 0.001
+    }
+  },
+  "scaled_to_goal": {
+    "target_vol": 0.565,
+    "leverage_cap": 16.95,
+    "full": {
+      "days": 3012,
+      "cagr": 0.0766,
+      "total_return": 1.4155,
+      "ann_vol": 0.2467,
+      "sharpe": 0.423,
+      "sortino": 0.583,
+      "max_drawdown": 0.5063,
+      "calmar": 0.15,
+      "avg_gross_leverage": 5.3,
+      "cost_drag_annual": 0.0054
+    },
+    "test": {
+      "days": 1188,
+      "cagr": 0.2022,
+      "total_return": 1.3823,
+      "ann_vol": 0.2277,
+      "sharpe": 0.923,
+      "sortino": 1.305,
+      "max_drawdown": 0.3376,
+      "calmar": 0.6,
+      "avg_gross_leverage": 5.32,
+      "cost_drag_annual": 0.0047
+    }
+  }
+}
