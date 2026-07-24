@@ -32,7 +32,7 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_URL = "https://datafeed.dukascopy.com/datafeed"
-SCALE = 1000.0
+SCALE = 1000.0   # set per symbol in main(): JPY quote = 1e3, else 1e5
 REC = struct.Struct(">iiiiif")
 
 
@@ -128,8 +128,9 @@ def main():
     args = ap.parse_args()
     os.makedirs(args.cache, exist_ok=True)
     to_date = dt.date.fromisoformat(args.to_date)
-    global BASE
+    global BASE, SCALE
     BASE = f"{BASE_URL}/{args.symbol}"
+    SCALE = 1000.0 if args.symbol.upper().endswith("JPY") else 100000.0
     if args.out is None:
         args.out = os.path.join(ROOT, "data", f"{args.symbol.lower()}_dukascopy_daily.csv")
 
@@ -153,7 +154,7 @@ def main():
             w.writerow([d, bo, bh, bl, bc, ao, ah, al, ac,
                         round(ac - bc, 4), round(bv, 2)])
             n_kept += 1
-    print(f"wrote {n_kept} weekday bars to {args.out}")
+    print(f"wrote {n_kept} weekday bars to {args.out} (scale {SCALE:g})")
 
 
 if __name__ == "__main__":
