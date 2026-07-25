@@ -1,0 +1,90 @@
+{
+  "window": "2008-01-01..2026-07-22",
+  "symbols": [
+    "USA500IDXUSD",
+    "USATECHIDXUSD",
+    "JPNIDXJPY",
+    "GBRIDXGBP",
+    "XAUUSD"
+  ],
+  "assumptions": {
+    "dividend_yield": 0.02,
+    "cash_rate": 0.02,
+    "financing_rate": 0.035
+  },
+  "rows": [
+    {
+      "leverage": 1.0,
+      "cagr": 0.0695,
+      "ann_vol": 0.0965,
+      "sharpe": 0.744,
+      "max_drawdown": 0.1727,
+      "calmar": 0.4,
+      "total_return": 2.6201,
+      "avg_invested_fraction": 0.7146,
+      "avg_exposure": 0.7146,
+      "dividends": 0.0114,
+      "cash_interest": 0.0057,
+      "financing": -0.0,
+      "estimated_total_return": 0.0866
+    },
+    {
+      "leverage": 1.25,
+      "cagr": 0.086,
+      "ann_vol": 0.1206,
+      "sharpe": 0.744,
+      "max_drawdown": 0.2136,
+      "calmar": 0.4,
+      "total_return": 3.8555,
+      "avg_invested_fraction": 0.7146,
+      "avg_exposure": 0.8933,
+      "dividends": 0.0143,
+      "cash_interest": 0.0021,
+      "financing": -0.0,
+      "estimated_total_return": 0.1024
+    },
+    {
+      "leverage": 1.5,
+      "cagr": 0.1021,
+      "ann_vol": 0.1447,
+      "sharpe": 0.744,
+      "max_drawdown": 0.2536,
+      "calmar": 0.4,
+      "total_return": 5.4397,
+      "avg_invested_fraction": 0.7146,
+      "avg_exposure": 1.072,
+      "dividends": 0.0172,
+      "cash_interest": 0.0,
+      "financing": -0.0025,
+      "estimated_total_return": 0.1167
+    },
+    {
+      "leverage": 1.75,
+      "cagr": 0.1178,
+      "ann_vol": 0.1688,
+      "sharpe": 0.744,
+      "max_drawdown": 0.2925,
+      "calmar": 0.4,
+      "total_return": 7.4452,
+      "avg_invested_fraction": 0.7146,
+      "avg_exposure": 1.2506,
+      "dividends": 0.02,
+      "cash_interest": 0.0,
+      "financing": -0.0088,
+      "estimated_total_return": 0.129
+    }
+  ],
+  "buy_and_hold": {
+    "cagr": 0.0963,
+    "ann_vol": 0.1436,
+    "sharpe": 0.712,
+    "max_drawdown": 0.392,
+    "calmar": 0.25,
+    "total_return": 4.8213,
+    "avg_exposure": 1.0,
+    "dividends": 0.016,
+    "cash_interest": 0.0,
+    "financing": -0.0,
+    "estimated_total_return": 0.1123
+  }
+}

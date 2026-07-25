@@ -1,0 +1,205 @@
+{
+  "config": {
+    "sma": 250,
+    "sizing": "equal",
+    "basket": "equity_gold"
+  },
+  "symbols": [
+    "USA500IDXUSD",
+    "USATECHIDXUSD",
+    "JPNIDXJPY",
+    "GBRIDXGBP",
+    "XAUUSD"
+  ],
+  "windows": {
+    "GFC decade (never used before)": {
+      "trend_filtered": {
+        "cagr": 0.0604,
+        "ann_vol": 0.0868,
+        "sharpe": 0.719,
+        "max_drawdown": 0.1365,
+        "calmar": 0.44,
+        "total_return": 0.53
+      },
+      "buy_hold": {
+        "cagr": 0.0597,
+        "ann_vol": 0.1503,
+        "sharpe": 0.461,
+        "max_drawdown": 0.392,
+        "calmar": 0.15,
+        "total_return": 0.522
+      }
+    },
+    "the original study window": {
+      "trend_filtered": {
+        "cagr": 0.075,
+        "ann_vol": 0.1019,
+        "sharpe": 0.761,
+        "max_drawdown": 0.1727,
+        "calmar": 0.43,
+        "total_return": 1.366
+      },
+      "buy_hold": {
+        "cagr": 0.1193,
+        "ann_vol": 0.1394,
+        "sharpe": 0.878,
+        "max_drawdown": 0.256,
+        "calmar": 0.47,
+        "total_return": 2.8262
+      }
+    },
+    "full 18.5 years": {
+      "trend_filtered": {
+        "cagr": 0.0695,
+        "ann_vol": 0.0965,
+        "sharpe": 0.744,
+        "max_drawdown": 0.1727,
+        "calmar": 0.4,
+        "total_return": 2.6201
+      },
+      "buy_hold": {
+        "cagr": 0.0963,
+        "ann_vol": 0.1436,
+        "sharpe": 0.712,
+        "max_drawdown": 0.392,
+        "calmar": 0.25,
+        "total_return": 4.8213
+      }
+    }
+  },
+  "per_year": [
+    {
+      "year": "2008",
+      "trend_return": -0.0122,
+      "trend_dd": 0.0565,
+      "buyhold_return": -0.2839,
+      "buyhold_dd": 0.392
+    },
+    {
+      "year": "2009",
+      "trend_return": 0.1712,
+      "trend_dd": 0.0381,
+      "buyhold_return": 0.3032,
+      "buyhold_dd": 0.1715
+    },
+    {
+      "year": "2010",
+      "trend_return": 0.0371,
+      "trend_dd": 0.1365,
+      "buyhold_return": 0.1397,
+      "buyhold_dd": 0.1256
+    },
+    {
+      "year": "2011",
+      "trend_return": -0.0182,
+      "trend_dd": 0.0775,
+      "buyhold_return": -0.0105,
+      "buyhold_dd": 0.1169
+    },
+    {
+      "year": "2012",
+      "trend_return": 0.0062,
+      "trend_dd": 0.1026,
+      "buyhold_return": 0.1368,
+      "buyhold_dd": 0.1071
+    },
+    {
+      "year": "2013",
+      "trend_return": 0.2507,
+      "trend_dd": 0.0736,
+      "buyhold_return": 0.1896,
+      "buyhold_dd": 0.0846
+    },
+    {
+      "year": "2014",
+      "trend_return": 0.0321,
+      "trend_dd": 0.0647,
+      "buyhold_return": 0.0693,
+      "buyhold_dd": 0.0674
+    },
+    {
+      "year": "2015",
+      "trend_return": -0.0403,
+      "trend_dd": 0.0962,
+      "buyhold_return": 0.0053,
+      "buyhold_dd": 0.1174
+    },
+    {
+      "year": "2016",
+      "trend_return": 0.0266,
+      "trend_dd": 0.0378,
+      "buyhold_return": 0.0837,
+      "buyhold_dd": 0.0836
+    },
+    {
+      "year": "2017",
+      "trend_return": 0.1422,
+      "trend_dd": 0.0297,
+      "buyhold_return": 0.1833,
+      "buyhold_dd": 0.0297
+    },
+    {
+      "year": "2018",
+      "trend_return": -0.0685,
+      "trend_dd": 0.1501,
+      "buyhold_return": -0.0639,
+      "buyhold_dd": 0.1417
+    },
+    {
+      "year": "2019",
+      "trend_return": 0.0716,
+      "trend_dd": 0.0674,
+      "buyhold_return": 0.2346,
+      "buyhold_dd": 0.0598
+    },
+    {
+      "year": "2020",
+      "trend_return": 0.1276,
+      "trend_dd": 0.1559,
+      "buyhold_return": 0.1816,
+      "buyhold_dd": 0.256
+    },
+    {
+      "year": "2021",
+      "trend_return": 0.0996,
+      "trend_dd": 0.0555,
+      "buyhold_return": 0.1388,
+      "buyhold_dd": 0.0589
+    },
+    {
+      "year": "2022",
+      "trend_return": -0.0946,
+      "trend_dd": 0.0987,
+      "buyhold_return": -0.1262,
+      "buyhold_dd": 0.1732
+    },
+    {
+      "year": "2023",
+      "trend_return": 0.1191,
+      "trend_dd": 0.0758,
+      "buyhold_return": 0.242,
+      "buyhold_dd": 0.0658
+    },
+    {
+      "year": "2024",
+      "trend_return": 0.2034,
+      "trend_dd": 0.0901,
+      "buyhold_return": 0.2036,
+      "buyhold_dd": 0.0901
+    },
+    {
+      "year": "2025",
+      "trend_return": 0.249,
+      "trend_dd": 0.0724,
+      "buyhold_return": 0.3032,
+      "buyhold_dd": 0.1482
+    },
+    {
+      "year": "2026",
+      "trend_return": 0.1155,
+      "trend_dd": 0.1027,
+      "buyhold_return": 0.1209,
+      "buyhold_dd": 0.1027
+    }
+  ]
+}

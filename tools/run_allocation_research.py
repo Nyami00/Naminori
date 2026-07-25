@@ -98,6 +98,7 @@ def run_allocation(uni, dates, cfg, start_date=EVAL_START, start_equity=1e6):
                         target = min(TARGET_VOL / vol, MAX_W) if vol else 0.0
                     else:
                         target = 1.0
+                target *= cfg.get("leverage", 1.0)
                 cost += abs(target - weight[s]) * row["spread_frac"] * 0.5
                 weight[s] = target
             cost /= len(symbols)
